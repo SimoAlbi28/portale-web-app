@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { lengthForLevel, pickWordForLevel } from "@/lib/hacking-words";
 
@@ -13,6 +20,8 @@ type Tile = {
   placedSlot: number | null;
   locked: boolean;
   shake?: boolean;
+  wrong?: boolean;
+  justCorrect?: boolean;
 };
 
 type GameState = {
@@ -48,9 +57,33 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+function countDiff(a: string[], b: string[]): number {
+  let d = 0;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) d++;
+  return d;
+}
+
+function shuffleWell(letters: string[]): string[] {
+  if (letters.length <= 2) return shuffle(letters);
+  const reversed = [...letters].reverse();
+  // require at least max(2, ceil(len/2)) positions different from the original
+  const minDiff = Math.max(2, Math.ceil(letters.length / 2));
+  let out = shuffle(letters);
+  let attempts = 0;
+  while (attempts < 60) {
+    const diffOrig = countDiff(out, letters);
+    const diffRev = countDiff(out, reversed);
+    // reject: equal to original, equal to reverse, or too close to original
+    if (diffOrig >= minDiff && diffRev >= 1) break;
+    out = shuffle(letters);
+    attempts++;
+  }
+  return out;
+}
+
 function buildTiles(word: string): Tile[] {
   const letters = word.split("");
-  const shuffled = shuffle(letters);
+  const shuffled = shuffleWell(letters);
   return shuffled.map((letter, i) => ({
     id: i,
     letter,
@@ -65,6 +98,7 @@ export function HackingGame() {
   const [word, setWord] = useState<string>("");
   const [tiles, setTiles] = useState<Tile[]>([]);
   const [showLevels, setShowLevels] = useState(false);
+  const [showCertificate, setShowCertificate] = useState(false);
   const [status, setStatus] = useState<
     "idle" | "checking" | "verifying" | "success"
   >("idle");
@@ -135,43 +169,58 @@ export function HackingGame() {
     // Auto check
     setStatus("checking");
     setAttempts((a) => a + 1);
+    // Phase 1: mark correct vs wrong but KEEP the letter visible in the slot
+    // so user can see the red/green flash.
     setTimeout(() => {
-      setTiles((prev) => {
-        const next = prev.map((t) => {
-          if (t.placedSlot === null) return t;
+      setTiles((prev) =>
+        prev.map((t) => {
+          if (t.placedSlot === null || t.locked) return t;
           if (t.letter === word[t.placedSlot]) {
-            return { ...t, locked: true };
+            return { ...t, locked: true, justCorrect: true };
           }
-          return { ...t, placedSlot: null, shake: true };
-        });
-        return next;
-      });
-      // Clear shake flag
+          return { ...t, wrong: true };
+        })
+      );
+      // Phase 2: after the flash, remove wrong letters from slots (back to pool with shake)
       setTimeout(() => {
-        setTiles((prev) => prev.map((t) => ({ ...t, shake: false })));
-        // Check if all locked → success
-        setTiles((prev) => {
-          const allLocked = prev.every((t) => t.locked);
-          if (allLocked) {
-            setStatus("verifying");
-            const newCompleted = Array.from(
-              new Set([...state.completed, state.level])
-            );
-            const nextLevel = Math.min(TOTAL_LEVELS, state.level + 1);
-            // Verification animation duration ~2.6s, then success text ~0.8s
-            setTimeout(() => setStatus("success"), 2600);
-            setTimeout(() => {
-              setState({ level: nextLevel, completed: newCompleted });
-              if (state.level < TOTAL_LEVELS) {
-                startNewLevel(nextLevel);
-              }
-            }, 3400);
-          } else {
-            setStatus("idle");
-          }
-          return prev;
-        });
-      }, 450);
+        setTiles((prev) =>
+          prev.map((t) =>
+            t.wrong
+              ? { ...t, wrong: false, placedSlot: null, shake: true }
+              : { ...t, justCorrect: false }
+          )
+        );
+        setTimeout(() => {
+          setTiles((prev) => prev.map((t) => ({ ...t, shake: false })));
+          // Check if all locked → success
+          setTiles((prev) => {
+            const allLocked = prev.every((t) => t.locked);
+            if (allLocked) {
+              setStatus("verifying");
+              const newCompleted = Array.from(
+                new Set([...state.completed, state.level])
+              );
+              const nextLevel = Math.min(TOTAL_LEVELS, state.level + 1);
+              const isFinalWin =
+                state.level === TOTAL_LEVELS &&
+                newCompleted.length === TOTAL_LEVELS;
+              setTimeout(() => setStatus("success"), 2600);
+              setTimeout(() => {
+                setState({ level: nextLevel, completed: newCompleted });
+                if (isFinalWin) {
+                  setStatus("idle");
+                  setShowCertificate(true);
+                } else if (state.level < TOTAL_LEVELS) {
+                  startNewLevel(nextLevel);
+                }
+              }, 3400);
+            } else {
+              setStatus("idle");
+            }
+            return prev;
+          });
+        }, 300);
+      }, 650);
     }, 250);
   }, [tiles, word, status, state.level, state.completed, startNewLevel]);
 
@@ -242,42 +291,8 @@ export function HackingGame() {
           )}
         </div>
 
-        {/* Slots */}
-        <div className="flex flex-wrap justify-center gap-2 md:gap-3 mb-6">
-          {slots.map((tile, i) => {
-            const lit =
-              status === "success" || (tile && tile.locked) ? "ok" : "idle";
-            return (
-              <motion.button
-                key={i}
-                type="button"
-                data-cursor="hover"
-                onClick={() => tile && !tile.locked && removeFromSlot(tile.id)}
-                aria-label={`Slot ${i + 1}`}
-                animate={
-                  tile?.shake
-                    ? { x: [-6, 6, -4, 4, 0] }
-                    : status === "success"
-                    ? { scale: [1, 1.12, 1] }
-                    : {}
-                }
-                transition={{ duration: 0.35 }}
-                className={`size-10 md:size-12 rounded-md border flex items-center justify-center text-base md:text-lg font-bold uppercase transition-colors ${
-                  lit === "ok"
-                    ? "border-emerald-400 bg-emerald-500/15 text-emerald-200 shadow-[0_0_18px_rgba(16,185,129,0.5)]"
-                    : tile
-                    ? "border-cyan-400/60 bg-cyan-400/5 text-cyan-200"
-                    : "border-emerald-500/30 bg-black/60 text-emerald-500/30"
-                }`}
-              >
-                {tile?.letter || "_"}
-              </motion.button>
-            );
-          })}
-        </div>
-
-        {/* Pool */}
-        <div className="flex flex-wrap justify-center gap-2 min-h-[3rem]">
+        {/* Pool (ora sopra) */}
+        <div className="flex flex-wrap justify-center gap-2 min-h-[3rem] mb-5">
           <AnimatePresence>
             {pool.map((tile) => (
               <motion.button
@@ -287,7 +302,11 @@ export function HackingGame() {
                 onClick={() => placeInNextSlot(tile.id)}
                 layout
                 initial={{ opacity: 0, scale: 0.7 }}
-                animate={{ opacity: 1, scale: 1 }}
+                animate={
+                  tile.shake
+                    ? { opacity: 1, scale: 1, x: [-6, 6, -4, 4, 0] }
+                    : { opacity: 1, scale: 1 }
+                }
                 exit={{ opacity: 0, scale: 0.5 }}
                 transition={{ type: "spring", stiffness: 350, damping: 24 }}
                 className="size-9 md:size-10 rounded-md border border-emerald-500/50 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20 hover:border-emerald-400 transition-colors flex items-center justify-center text-sm md:text-base font-bold uppercase shadow-[0_0_10px_rgba(16,185,129,0.25)]"
@@ -296,6 +315,45 @@ export function HackingGame() {
               </motion.button>
             ))}
           </AnimatePresence>
+        </div>
+
+        {/* Slots (ora sotto) */}
+        <div className="flex flex-wrap justify-center gap-2 md:gap-3">
+          {slots.map((tile, i) => {
+            const isLocked = !!tile && tile.locked;
+            const isWrong = !!tile && tile.wrong;
+            const isJustCorrect = !!tile && tile.justCorrect;
+            return (
+              <motion.button
+                key={i}
+                type="button"
+                data-cursor="hover"
+                onClick={() => tile && !tile.locked && removeFromSlot(tile.id)}
+                aria-label={`Slot ${i + 1}`}
+                animate={
+                  isWrong
+                    ? { x: [-5, 5, -3, 3, 0] }
+                    : isJustCorrect
+                    ? { scale: [1, 1.18, 1] }
+                    : status === "success"
+                    ? { scale: [1, 1.12, 1] }
+                    : {}
+                }
+                transition={{ duration: 0.45 }}
+                className={`size-10 md:size-12 rounded-md border-2 flex items-center justify-center text-base md:text-lg font-bold uppercase transition-colors ${
+                  isWrong
+                    ? "border-red-500 bg-red-500/20 text-red-200 shadow-[0_0_18px_rgba(239,68,68,0.7)]"
+                    : isLocked || status === "success"
+                    ? "border-emerald-400 bg-emerald-500/20 text-emerald-200 shadow-[0_0_18px_rgba(16,185,129,0.55)]"
+                    : tile
+                    ? "border-cyan-400/70 bg-cyan-400/5 text-cyan-200"
+                    : "border-emerald-500/30 bg-black/60 text-emerald-500/30"
+                }`}
+              >
+                {tile?.letter || "_"}
+              </motion.button>
+            );
+          })}
         </div>
 
         {/* Verification overlay */}
@@ -398,6 +456,13 @@ export function HackingGame() {
               </div>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Certificate modal — unlocked when all 100 levels are completed */}
+      <AnimatePresence>
+        {showCertificate && (
+          <CertificateOverlay onClose={() => setShowCertificate(false)} />
         )}
       </AnimatePresence>
     </section>
@@ -556,3 +621,614 @@ function VerifyOverlay({
     </motion.div>
   );
 }
+
+// === Certificate overlay: form → generated SVG cert → download / tap to zoom ===
+
+function CertificateOverlay({ onClose }: { onClose: () => void }) {
+  const [step, setStep] = useState<"form" | "cert">("form");
+  const [first, setFirst] = useState("");
+  const [last, setLast] = useState("");
+  const [zoomed, setZoomed] = useState(false);
+  const certRef = useRef<SVGSVGElement>(null);
+
+  const dateStr = new Date().toLocaleDateString("it-IT", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+  const serial =
+    "HAK-" +
+    Math.random().toString(36).slice(2, 6).toUpperCase() +
+    "-" +
+    Math.random().toString(36).slice(2, 6).toUpperCase() +
+    "-" +
+    Math.random().toString(36).slice(2, 6).toUpperCase();
+  const hash = Array.from({ length: 24 }, () =>
+    "0123456789abcdef"[Math.floor(Math.random() * 16)]
+  ).join("");
+
+  const fullName = `${first.trim()} ${last.trim()}`.trim();
+
+  const downloadCert = async () => {
+    const svg = certRef.current;
+    if (!svg) return;
+    const xml = new XMLSerializer().serializeToString(svg);
+    const svg64 = btoa(unescape(encodeURIComponent(xml)));
+    const src = "data:image/svg+xml;base64," + svg64;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const scale = 2;
+      canvas.width = 1200 * scale;
+      canvas.height = 850 * scale;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.scale(scale, scale);
+      ctx.drawImage(img, 0, 0, 1200, 850);
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `attestato-${last || "hacker"}.png`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }, "image/png");
+    };
+    img.src = src;
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+      className="fixed inset-0 z-[170] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 font-mono"
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 260, damping: 22 }}
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-3xl rounded-2xl border border-emerald-500/40 bg-black/95 backdrop-blur-xl p-6 md:p-8 shadow-[0_0_80px_rgba(16,185,129,0.35)]"
+      >
+        <button
+          type="button"
+          data-cursor="hover"
+          onClick={onClose}
+          aria-label="Chiudi"
+          className="absolute top-4 right-4 text-emerald-300/60 hover:text-emerald-200 text-xl"
+        >
+          ✕
+        </button>
+
+        {step === "form" ? (
+          <div className="text-center">
+            <div className="text-[10px] uppercase tracking-[0.5em] text-emerald-300/70 mb-2">
+              // mission complete
+            </div>
+            <h3 className="text-3xl md:text-5xl font-bold text-emerald-300 drop-shadow-[0_0_18px_rgba(16,185,129,0.6)]">
+              CONGRATULAZIONI!
+            </h3>
+            <p className="mt-4 text-sm md:text-base text-emerald-200/80">
+              Hai completato tutti i{" "}
+              <span className="text-cyan-300">100 livelli</span> del{" "}
+              <span className="text-cyan-300">pwd-cracker</span>. Sei
+              ufficialmente un{" "}
+              <span className="text-emerald-300">Hacker Certificato</span>.
+            </p>
+            <p className="mt-2 text-xs text-emerald-300/60">
+              Inserisci i tuoi dati per generare l&apos;attestato ufficiale.
+            </p>
+
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-widest text-emerald-300/60">
+                  Nome
+                </span>
+                <input
+                  type="text"
+                  value={first}
+                  onChange={(e) => setFirst(e.target.value)}
+                  maxLength={30}
+                  className="mt-1 w-full rounded-md border border-emerald-500/40 bg-black/60 px-3 py-2 text-white placeholder:text-emerald-300/30 focus:outline-none focus:border-emerald-400 focus:shadow-[0_0_16px_rgba(16,185,129,0.4)]"
+                  placeholder="es. Mario"
+                />
+              </label>
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-widest text-emerald-300/60">
+                  Cognome
+                </span>
+                <input
+                  type="text"
+                  value={last}
+                  onChange={(e) => setLast(e.target.value)}
+                  maxLength={30}
+                  className="mt-1 w-full rounded-md border border-emerald-500/40 bg-black/60 px-3 py-2 text-white placeholder:text-emerald-300/30 focus:outline-none focus:border-emerald-400 focus:shadow-[0_0_16px_rgba(16,185,129,0.4)]"
+                  placeholder="es. Rossi"
+                />
+              </label>
+            </div>
+
+            <button
+              type="button"
+              data-cursor="hover"
+              disabled={!first.trim() || !last.trim()}
+              onClick={() => setStep("cert")}
+              className="mt-6 inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold bg-gradient-to-r from-emerald-300 to-cyan-300 text-black disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_0_30px_rgba(16,185,129,0.6)] transition-shadow"
+            >
+              GENERA ATTESTATO →
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-4">
+            <div className="text-[10px] uppercase tracking-[0.4em] text-emerald-300/70">
+              // certificato generato
+            </div>
+
+            <button
+              type="button"
+              data-cursor="hover"
+              onClick={() => setZoomed(true)}
+              aria-label="Ingrandisci attestato"
+              className="relative w-full max-w-2xl rounded-lg overflow-hidden ring-1 ring-emerald-500/30 shadow-[0_0_40px_rgba(16,185,129,0.3)] transition-transform hover:scale-[1.01]"
+            >
+              <Certificate
+                ref={certRef}
+                name={fullName}
+                date={dateStr}
+                serial={serial}
+                hash={hash}
+              />
+            </button>
+
+            <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
+              <button
+                type="button"
+                data-cursor="hover"
+                onClick={downloadCert}
+                className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold bg-gradient-to-r from-emerald-300 to-cyan-300 text-black hover:shadow-[0_0_24px_rgba(16,185,129,0.55)] transition-shadow"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                Scarica PNG
+              </button>
+              <button
+                type="button"
+                data-cursor="hover"
+                onClick={() => setZoomed(true)}
+                className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold border border-emerald-400/60 text-emerald-200 hover:bg-emerald-500/10 transition-colors"
+              >
+                🔍 Ingrandisci
+              </button>
+              <button
+                type="button"
+                data-cursor="hover"
+                onClick={() => setStep("form")}
+                className="text-xs uppercase tracking-widest text-emerald-300/60 hover:text-emerald-200 px-2 py-1"
+              >
+                ← Modifica nome
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Zoom overlay */}
+        <AnimatePresence>
+          {zoomed && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setZoomed(false)}
+              className="fixed inset-0 z-[180] bg-black/95 backdrop-blur-md flex items-center justify-center p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.85 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0.85 }}
+                transition={{ type: "spring", stiffness: 260, damping: 24 }}
+                onClick={(e) => e.stopPropagation()}
+                className="relative w-full max-w-5xl rounded-lg overflow-hidden ring-1 ring-emerald-500/40 shadow-[0_0_80px_rgba(16,185,129,0.4)]"
+              >
+                <Certificate
+                  name={fullName}
+                  date={dateStr}
+                  serial={serial}
+                  hash={hash}
+                />
+                <button
+                  type="button"
+                  data-cursor="hover"
+                  onClick={() => setZoomed(false)}
+                  aria-label="Chiudi"
+                  className="absolute top-3 right-3 size-9 rounded-full bg-black/70 border border-emerald-500/50 text-emerald-200 hover:bg-black/90"
+                >
+                  ✕
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+const Certificate = forwardRef<
+  SVGSVGElement,
+  { name: string; date: string; serial: string; hash: string }
+>(function Certificate({ name, date, serial, hash }, ref) {
+  return (
+    <svg
+      ref={ref}
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 1200 850"
+      className="w-full h-auto block"
+    >
+      <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#04140b" />
+          <stop offset="100%" stopColor="#00180d" />
+        </linearGradient>
+        <linearGradient id="glow" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#22d3ee" />
+          <stop offset="50%" stopColor="#34d399" />
+          <stop offset="100%" stopColor="#22d3ee" />
+        </linearGradient>
+        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path
+            d="M 40 0 L 0 0 0 40"
+            fill="none"
+            stroke="#10b981"
+            strokeOpacity="0.08"
+            strokeWidth="1"
+          />
+        </pattern>
+      </defs>
+
+      <rect width="1200" height="850" fill="url(#bg)" />
+      <rect width="1200" height="850" fill="url(#grid)" />
+
+      {/* corner brackets */}
+      {[
+        [40, 40, 1, 1],
+        [1160, 40, -1, 1],
+        [40, 810, 1, -1],
+        [1160, 810, -1, -1],
+      ].map(([x, y, dx, dy], i) => (
+        <g key={i} stroke="#34d399" strokeWidth="2" fill="none">
+          <path d={`M ${x} ${y} L ${x + 30 * dx} ${y}`} />
+          <path d={`M ${x} ${y} L ${x} ${y + 30 * dy}`} />
+        </g>
+      ))}
+
+      {/* outer border */}
+      <rect
+        x="60"
+        y="60"
+        width="1080"
+        height="730"
+        fill="none"
+        stroke="#10b981"
+        strokeOpacity="0.5"
+        strokeWidth="1"
+      />
+      <rect
+        x="72"
+        y="72"
+        width="1056"
+        height="706"
+        fill="none"
+        stroke="#10b981"
+        strokeOpacity="0.25"
+        strokeWidth="1"
+      />
+
+      {/* top bar */}
+      <g transform="translate(100 100)">
+        <circle cx="0" cy="0" r="7" fill="#ef4444" fillOpacity="0.7" />
+        <circle cx="22" cy="0" r="7" fill="#eab308" fillOpacity="0.7" />
+        <circle cx="44" cy="0" r="7" fill="#10b981" fillOpacity="0.8" />
+        <text
+          x="70"
+          y="5"
+          fill="#6ee7b7"
+          fontFamily="monospace"
+          fontSize="14"
+          letterSpacing="4"
+        >
+          TERMINAL // certificate.generator
+        </text>
+      </g>
+      <text
+        x="1100"
+        y="105"
+        textAnchor="end"
+        fill="#6ee7b7"
+        fontFamily="monospace"
+        fontSize="13"
+        letterSpacing="3"
+      >
+        STATUS: VERIFIED ✓
+      </text>
+
+      {/* kicker */}
+      <text
+        x="600"
+        y="180"
+        textAnchor="middle"
+        fill="#6ee7b7"
+        fontFamily="monospace"
+        fontSize="14"
+        letterSpacing="8"
+        opacity="0.8"
+      >
+        // OFFICIAL CERTIFICATE OF ACHIEVEMENT
+      </text>
+
+      {/* title */}
+      <text
+        x="600"
+        y="260"
+        textAnchor="middle"
+        fontFamily="monospace"
+        fontSize="64"
+        fontWeight="bold"
+        fill="url(#glow)"
+        letterSpacing="6"
+      >
+        HACKER CERTIFICATO
+      </text>
+
+      {/* subtitle */}
+      <text
+        x="600"
+        y="310"
+        textAnchor="middle"
+        fill="#ffffff"
+        opacity="0.75"
+        fontFamily="monospace"
+        fontSize="18"
+        letterSpacing="3"
+      >
+        Level 100 / 100 — password-cracker.exe
+      </text>
+
+      {/* "conferito a" */}
+      <text
+        x="600"
+        y="390"
+        textAnchor="middle"
+        fill="#6ee7b7"
+        fontFamily="monospace"
+        fontSize="14"
+        letterSpacing="8"
+        opacity="0.8"
+      >
+        CONFERITO A
+      </text>
+
+      {/* name */}
+      <text
+        x="600"
+        y="470"
+        textAnchor="middle"
+        fontFamily="serif"
+        fontSize="58"
+        fontWeight="bold"
+        fill="#ffffff"
+      >
+        {name.toUpperCase() || "ANONYMOUS"}
+      </text>
+
+      <line
+        x1="300"
+        y1="500"
+        x2="900"
+        y2="500"
+        stroke="#34d399"
+        strokeOpacity="0.6"
+        strokeWidth="1"
+      />
+
+      {/* body text */}
+      <text
+        x="600"
+        y="555"
+        textAnchor="middle"
+        fill="#e6f1ff"
+        fontFamily="monospace"
+        fontSize="15"
+        opacity="0.85"
+      >
+        Per aver decifrato 100 password consecutive, bypassato ogni firewall
+      </text>
+      <text
+        x="600"
+        y="578"
+        textAnchor="middle"
+        fill="#e6f1ff"
+        fontFamily="monospace"
+        fontSize="15"
+        opacity="0.85"
+      >
+        e dimostrato abilità eccezionali nel pensiero logico-cibernetico.
+      </text>
+
+      {/* meta grid */}
+      <g transform="translate(180 640)">
+        <text
+          x="0"
+          y="0"
+          fill="#6ee7b7"
+          fontFamily="monospace"
+          fontSize="11"
+          letterSpacing="3"
+          opacity="0.6"
+        >
+          DATA
+        </text>
+        <text
+          x="0"
+          y="22"
+          fill="#ffffff"
+          fontFamily="monospace"
+          fontSize="16"
+          fontWeight="bold"
+        >
+          {date}
+        </text>
+      </g>
+      <g transform="translate(600 640)" textAnchor="middle">
+        <text
+          x="0"
+          y="0"
+          fill="#6ee7b7"
+          fontFamily="monospace"
+          fontSize="11"
+          letterSpacing="3"
+          opacity="0.6"
+        >
+          SERIAL-ID
+        </text>
+        <text
+          x="0"
+          y="22"
+          fill="#ffffff"
+          fontFamily="monospace"
+          fontSize="16"
+          fontWeight="bold"
+        >
+          {serial}
+        </text>
+      </g>
+      <g transform="translate(1020 640)" textAnchor="end">
+        <text
+          x="0"
+          y="0"
+          fill="#6ee7b7"
+          fontFamily="monospace"
+          fontSize="11"
+          letterSpacing="3"
+          opacity="0.6"
+        >
+          CLEARANCE
+        </text>
+        <text
+          x="0"
+          y="22"
+          fill="#ffffff"
+          fontFamily="monospace"
+          fontSize="16"
+          fontWeight="bold"
+        >
+          ROOT / LEVEL-10
+        </text>
+      </g>
+
+      {/* hash */}
+      <text
+        x="600"
+        y="720"
+        textAnchor="middle"
+        fill="#34d399"
+        fontFamily="monospace"
+        fontSize="13"
+        opacity="0.7"
+        letterSpacing="2"
+      >
+        SHA-256: {hash}
+      </text>
+
+      {/* signature line */}
+      <g transform="translate(840 760)">
+        <line
+          x1="-120"
+          y1="0"
+          x2="120"
+          y2="0"
+          stroke="#ffffff"
+          strokeOpacity="0.3"
+        />
+        <text
+          x="0"
+          y="20"
+          textAnchor="middle"
+          fill="#ffffff"
+          opacity="0.7"
+          fontFamily="serif"
+          fontStyle="italic"
+          fontSize="13"
+        >
+          DAILY APPS // system admin
+        </text>
+      </g>
+      <g
+        transform="translate(840 740)"
+        fontFamily="cursive"
+        fontSize="24"
+        fill="#e6f1ff"
+        textAnchor="middle"
+      >
+        <text x="0" y="0" transform="rotate(-4)">~daily-apps~</text>
+      </g>
+
+      {/* seal */}
+      <g transform="translate(220 760)">
+        <circle
+          cx="0"
+          cy="0"
+          r="45"
+          fill="none"
+          stroke="#34d399"
+          strokeWidth="2"
+        />
+        <circle
+          cx="0"
+          cy="0"
+          r="38"
+          fill="none"
+          stroke="#34d399"
+          strokeOpacity="0.5"
+          strokeDasharray="4 3"
+        />
+        <text
+          x="0"
+          y="-3"
+          textAnchor="middle"
+          fill="#34d399"
+          fontFamily="monospace"
+          fontSize="10"
+          letterSpacing="2"
+        >
+          CERTIFIED
+        </text>
+        <text
+          x="0"
+          y="14"
+          textAnchor="middle"
+          fill="#34d399"
+          fontFamily="monospace"
+          fontSize="22"
+          fontWeight="bold"
+        >
+          ✓
+        </text>
+      </g>
+    </svg>
+  );
+});
+
