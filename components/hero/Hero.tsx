@@ -7,7 +7,7 @@ import { HackingGame } from "@/components/game/HackingGame";
 export function Hero() {
   return (
     <section className="relative min-h-[100svh] flex flex-col items-center overflow-hidden pt-16 pb-8 md:pt-20 md:pb-10">
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_60%,rgba(3,0,20,0.9)_100%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_25%,rgba(3,0,20,0.7)_55%,rgba(3,0,20,0.85)_75%,rgba(3,0,20,0.4)_92%,rgba(3,0,20,0)_100%)]" />
 
       {/* Top: title + tagline + button */}
       <div className="relative mx-auto w-full max-w-6xl px-6 md:px-10">

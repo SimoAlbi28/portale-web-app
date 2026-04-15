@@ -142,8 +142,8 @@ export function BootSequence() {
             </div>
 
             {/* terminal frame */}
-            <div className="rounded-lg border border-cyan-400/30 bg-black/60 backdrop-blur-sm shadow-[0_0_40px_rgba(34,211,238,0.15)] text-left overflow-hidden">
-              <div className="flex items-center gap-1.5 border-b border-cyan-400/20 px-3 py-2">
+            <div className="rounded-lg border border-cyan-400/30 bg-black/60 backdrop-blur-sm shadow-[0_0_40px_rgba(34,211,238,0.15)] text-center overflow-hidden">
+              <div className="flex items-center gap-1.5 border-b border-cyan-400/20 px-3 py-2 text-left">
                 <span className="size-2 rounded-full bg-red-500/70" />
                 <span className="size-2 rounded-full bg-yellow-500/70" />
                 <span className="size-2 rounded-full bg-emerald-500/70" />

@@ -90,6 +90,10 @@ export function CommandPalette() {
         router.push(`/apps/${app.slug}`);
         setOpen(false);
       }
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      setOpen(false);
     }
   };
 

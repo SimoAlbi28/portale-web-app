@@ -22,6 +22,7 @@ type Tile = {
   shake?: boolean;
   wrong?: boolean;
   justCorrect?: boolean;
+  revealed?: boolean;
 };
 
 type GameState = {
@@ -100,7 +101,7 @@ export function HackingGame() {
   const [showLevels, setShowLevels] = useState(false);
   const [showCertificate, setShowCertificate] = useState(false);
   const [status, setStatus] = useState<
-    "idle" | "checking" | "verifying" | "success"
+    "idle" | "checking" | "verifying" | "success" | "failing"
   >("idle");
   const [attempts, setAttempts] = useState(0);
 
@@ -161,17 +162,31 @@ export function HackingGame() {
     );
   };
 
-  // Check when all slots filled
+  // Detect when all slots are filled → transition to "checking"
   useEffect(() => {
     if (!word || status !== "idle") return;
     const placed = tiles.filter((t) => t.placedSlot !== null).length;
     if (placed !== word.length) return;
-    // Auto check
     setStatus("checking");
     setAttempts((a) => a + 1);
-    // Phase 1: mark correct vs wrong but KEEP the letter visible in the slot
-    // so user can see the red/green flash.
-    setTimeout(() => {
+  }, [tiles, word, status]);
+
+  const maxAttempts = word.length || 1;
+
+  // Run the "checking" phase (1→2→3 flash, then decide)
+  useEffect(() => {
+    if (status !== "checking") return;
+    let cancelled = false;
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+    const schedule = (fn: () => void, delay: number) => {
+      const id = setTimeout(() => {
+        if (!cancelled) fn();
+      }, delay);
+      timeouts.push(id);
+    };
+
+    // Phase 1: mark correct/wrong, keep letter in slot for flash
+    schedule(() => {
       setTiles((prev) =>
         prev.map((t) => {
           if (t.placedSlot === null || t.locked) return t;
@@ -181,48 +196,111 @@ export function HackingGame() {
           return { ...t, wrong: true };
         })
       );
-      // Phase 2: after the flash, remove wrong letters from slots (back to pool with shake)
-      setTimeout(() => {
-        setTiles((prev) =>
-          prev.map((t) =>
-            t.wrong
-              ? { ...t, wrong: false, placedSlot: null, shake: true }
-              : { ...t, justCorrect: false }
-          )
-        );
-        setTimeout(() => {
-          setTiles((prev) => prev.map((t) => ({ ...t, shake: false })));
-          // Check if all locked → success
-          setTiles((prev) => {
-            const allLocked = prev.every((t) => t.locked);
-            if (allLocked) {
-              setStatus("verifying");
-              const newCompleted = Array.from(
-                new Set([...state.completed, state.level])
-              );
-              const nextLevel = Math.min(TOTAL_LEVELS, state.level + 1);
-              const isFinalWin =
-                state.level === TOTAL_LEVELS &&
-                newCompleted.length === TOTAL_LEVELS;
-              setTimeout(() => setStatus("success"), 2600);
-              setTimeout(() => {
-                setState({ level: nextLevel, completed: newCompleted });
-                if (isFinalWin) {
-                  setStatus("idle");
-                  setShowCertificate(true);
-                } else if (state.level < TOTAL_LEVELS) {
-                  startNewLevel(nextLevel);
-                }
-              }, 3400);
-            } else {
-              setStatus("idle");
-            }
-            return prev;
-          });
-        }, 300);
-      }, 650);
-    }, 250);
-  }, [tiles, word, status, state.level, state.completed, startNewLevel]);
+    }, 150);
+
+    // Phase 2: remove wrong tiles, send back to pool with shake
+    schedule(() => {
+      setTiles((prev) =>
+        prev.map((t) => {
+          if (t.wrong) {
+            return {
+              ...t,
+              wrong: false,
+              placedSlot: null,
+              shake: true,
+            };
+          }
+          return { ...t, justCorrect: false };
+        })
+      );
+    }, 850);
+
+    // Phase 3: clear shake + decide next status
+    schedule(() => {
+      let allLocked = false;
+      setTiles((prev) => {
+        allLocked = prev.every((t) => t.locked);
+        return prev.map((t) => ({ ...t, shake: false }));
+      });
+
+      if (allLocked) {
+        setStatus("verifying");
+      } else if (attempts >= maxAttempts) {
+        // Out of attempts → reveal the solution and move on without completing
+        setStatus("failing");
+      } else {
+        setStatus("idle");
+      }
+    }, 1250);
+
+    return () => {
+      cancelled = true;
+      timeouts.forEach((id) => clearTimeout(id));
+    };
+  }, [status, word, attempts, maxAttempts]);
+
+  // Run the "failing" phase: show HACKING FAILED, then retry same level
+  useEffect(() => {
+    if (status !== "failing") return;
+    let cancelled = false;
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+    const schedule = (fn: () => void, delay: number) => {
+      const id = setTimeout(() => {
+        if (!cancelled) fn();
+      }, delay);
+      timeouts.push(id);
+    };
+
+    // After the overlay, reshuffle same word and reset attempts so user retries
+    schedule(() => {
+      setTiles(buildTiles(word));
+      setAttempts(0);
+      setStatus("idle");
+    }, 2400);
+
+    return () => {
+      cancelled = true;
+      timeouts.forEach((id) => clearTimeout(id));
+    };
+  }, [status, word]);
+
+  // Run the "verifying → success → next level" sequence
+  useEffect(() => {
+    if (status !== "verifying") return;
+    let cancelled = false;
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+    const schedule = (fn: () => void, delay: number) => {
+      const id = setTimeout(() => {
+        if (!cancelled) fn();
+      }, delay);
+      timeouts.push(id);
+    };
+
+    const newCompleted = Array.from(
+      new Set([...state.completed, state.level])
+    );
+    const nextLevel = Math.min(TOTAL_LEVELS, state.level + 1);
+    const isFinalWin =
+      state.level === TOTAL_LEVELS && newCompleted.length === TOTAL_LEVELS;
+
+    schedule(() => setStatus("success"), 2600);
+    schedule(() => {
+      setState({ level: nextLevel, completed: newCompleted });
+      if (isFinalWin) {
+        setStatus("idle");
+        setShowCertificate(true);
+      } else if (state.level < TOTAL_LEVELS) {
+        startNewLevel(nextLevel);
+      } else {
+        setStatus("idle");
+      }
+    }, 3400);
+
+    return () => {
+      cancelled = true;
+      timeouts.forEach((id) => clearTimeout(id));
+    };
+  }, [status, state.level, state.completed, startNewLevel]);
 
   const reset = () => {
     if (!word) return;
@@ -286,9 +364,17 @@ export function HackingGame() {
             [LV {String(state.level).padStart(3, "0")}/{TOTAL_LEVELS}]
           </span>{" "}
           <span className="opacity-50">— {currentLength} chars</span>
-          {attempts > 0 && (
-            <span className="ml-2 opacity-50">// attempt {attempts}</span>
-          )}
+          <span
+            className={`ml-2 ${
+              attempts >= maxAttempts
+                ? "text-red-400"
+                : attempts >= maxAttempts - 1
+                ? "text-yellow-300"
+                : "opacity-50"
+            }`}
+          >
+            // {attempts}/{maxAttempts} tentativi
+          </span>
         </div>
 
         {/* Pool (ora sopra) */}
@@ -305,10 +391,14 @@ export function HackingGame() {
                 animate={
                   tile.shake
                     ? { opacity: 1, scale: 1, x: [-6, 6, -4, 4, 0] }
-                    : { opacity: 1, scale: 1 }
+                    : { opacity: 1, scale: 1, x: 0 }
                 }
                 exit={{ opacity: 0, scale: 0.5 }}
-                transition={{ type: "spring", stiffness: 350, damping: 24 }}
+                transition={
+                  tile.shake
+                    ? { duration: 0.45, ease: "easeOut" }
+                    : { type: "spring", stiffness: 350, damping: 24 }
+                }
                 className="size-9 md:size-10 rounded-md border border-emerald-500/50 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20 hover:border-emerald-400 transition-colors flex items-center justify-center text-sm md:text-base font-bold uppercase shadow-[0_0_10px_rgba(16,185,129,0.25)]"
               >
                 {tile.letter}
@@ -323,6 +413,7 @@ export function HackingGame() {
             const isLocked = !!tile && tile.locked;
             const isWrong = !!tile && tile.wrong;
             const isJustCorrect = !!tile && tile.justCorrect;
+            const isRevealed = !!tile && tile.revealed;
             return (
               <motion.button
                 key={i}
@@ -335,6 +426,8 @@ export function HackingGame() {
                     ? { x: [-5, 5, -3, 3, 0] }
                     : isJustCorrect
                     ? { scale: [1, 1.18, 1] }
+                    : isRevealed
+                    ? { scale: [0.8, 1.12, 1] }
                     : status === "success"
                     ? { scale: [1, 1.12, 1] }
                     : {}
@@ -343,6 +436,8 @@ export function HackingGame() {
                 className={`size-10 md:size-12 rounded-md border-2 flex items-center justify-center text-base md:text-lg font-bold uppercase transition-colors ${
                   isWrong
                     ? "border-red-500 bg-red-500/20 text-red-200 shadow-[0_0_18px_rgba(239,68,68,0.7)]"
+                    : isRevealed
+                    ? "border-yellow-400 bg-yellow-500/15 text-yellow-200 shadow-[0_0_18px_rgba(234,179,8,0.55)]"
                     : isLocked || status === "success"
                     ? "border-emerald-400 bg-emerald-500/20 text-emerald-200 shadow-[0_0_18px_rgba(16,185,129,0.55)]"
                     : tile
@@ -363,6 +458,11 @@ export function HackingGame() {
           )}
         </AnimatePresence>
 
+        {/* Failure overlay */}
+        <AnimatePresence>
+          {status === "failing" && <FailOverlay />}
+        </AnimatePresence>
+
         {/* Bottom bar */}
         <div className="mt-6 flex items-center justify-between text-[11px] text-emerald-300/60">
           <button
@@ -373,13 +473,23 @@ export function HackingGame() {
           >
             ⟲ Reset
           </button>
-          <div className="text-emerald-500/60 animate-pulse">
+          <div
+            className={`animate-pulse ${
+              status === "failing"
+                ? "text-red-400"
+                : status === "verifying" || status === "success"
+                ? "text-emerald-300"
+                : "text-emerald-500/60"
+            }`}
+          >
             {status === "success"
               ? "✓ ACCESS GRANTED"
               : status === "verifying"
               ? "decrypting..."
               : status === "checking"
               ? "verifying..."
+              : status === "failing"
+              ? "✗ ACCESS DENIED — password revealed"
               : "awaiting input_"}
           </div>
         </div>
@@ -421,37 +531,94 @@ export function HackingGame() {
                   (lv) => {
                     const done = state.completed.includes(lv);
                     const current = lv === state.level;
+                    const row = Math.floor((lv - 1) / 10);
+                    // Row is unlocked if all previous rows are fully completed
+                    let unlocked = true;
+                    for (let r = 0; r < row; r++) {
+                      for (let n = r * 10 + 1; n <= r * 10 + 10; n++) {
+                        if (!state.completed.includes(n)) {
+                          unlocked = false;
+                          break;
+                        }
+                      }
+                      if (!unlocked) break;
+                    }
                     return (
-                      <div
+                      <button
                         key={lv}
-                        className={`relative aspect-square rounded-md flex items-center justify-center text-[10px] md:text-xs font-bold border ${
-                          done
-                            ? "bg-emerald-500/20 border-emerald-400 text-emerald-200 shadow-[0_0_10px_rgba(16,185,129,0.4)]"
-                            : "bg-red-500/10 border-red-500/50 text-red-300/80"
+                        type="button"
+                        data-cursor={unlocked ? "hover" : undefined}
+                        disabled={!unlocked}
+                        onClick={() => {
+                          if (!unlocked) return;
+                          setState((s) => ({ ...s, level: lv }));
+                          startNewLevel(lv);
+                          setShowLevels(false);
+                        }}
+                        aria-label={
+                          unlocked
+                            ? `Vai al livello ${lv}`
+                            : `Livello ${lv} bloccato`
+                        }
+                        className={`relative aspect-square rounded-md flex items-center justify-center text-[10px] md:text-xs font-bold border transition-all ${
+                          !unlocked
+                            ? "bg-white/[0.02] border-white/10 text-white/20 cursor-not-allowed"
+                            : done
+                            ? "bg-emerald-500/20 border-emerald-400 text-emerald-200 shadow-[0_0_10px_rgba(16,185,129,0.4)] hover:bg-emerald-500/30 hover:scale-105"
+                            : "bg-red-500/10 border-red-500/50 text-red-300/80 hover:bg-red-500/20 hover:scale-105"
                         } ${
                           current
                             ? "ring-2 ring-cyan-300 ring-offset-2 ring-offset-black"
                             : ""
                         }`}
                       >
-                        {lv}
-                      </div>
+                        {unlocked ? (
+                          lv
+                        ) : (
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            aria-hidden
+                          >
+                            <rect
+                              x="5"
+                              y="11"
+                              width="14"
+                              height="10"
+                              rx="2"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            />
+                            <path
+                              d="M8 11V7a4 4 0 0 1 8 0v4"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            />
+                          </svg>
+                        )}
+                      </button>
                     );
                   }
                 )}
               </div>
-              <div className="mt-5 flex items-center justify-center gap-6 text-[11px] uppercase tracking-widest">
+              <div className="mt-5 flex items-center flex-wrap justify-center gap-x-5 gap-y-2 text-[11px] uppercase tracking-widest">
                 <span className="flex items-center gap-2 text-emerald-300">
                   <span className="size-2.5 rounded-sm bg-emerald-400" />{" "}
                   Completato
                 </span>
                 <span className="flex items-center gap-2 text-red-300/80">
                   <span className="size-2.5 rounded-sm bg-red-500/60" />{" "}
-                  Bloccato
+                  Da fare
                 </span>
                 <span className="flex items-center gap-2 text-cyan-300">
                   <span className="size-2.5 rounded-sm ring-2 ring-cyan-300" />{" "}
                   Attuale
+                </span>
+                <span className="flex items-center gap-2 text-white/30">
+                  <span className="size-2.5 rounded-sm bg-white/10 border border-white/10" />{" "}
+                  Bloccato
                 </span>
               </div>
             </motion.div>
@@ -653,7 +820,10 @@ function CertificateOverlay({ onClose }: { onClose: () => void }) {
     const svg = certRef.current;
     if (!svg) return;
     const xml = new XMLSerializer().serializeToString(svg);
-    const svg64 = btoa(unescape(encodeURIComponent(xml)));
+    const utf8 = new TextEncoder().encode(xml);
+    let binary = "";
+    for (const b of utf8) binary += String.fromCharCode(b);
+    const svg64 = btoa(binary);
     const src = "data:image/svg+xml;base64," + svg64;
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -862,6 +1032,50 @@ function CertificateOverlay({ onClose }: { onClose: () => void }) {
             </motion.div>
           )}
         </AnimatePresence>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function FailOverlay() {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="absolute inset-0 z-30 rounded-2xl bg-black/95 backdrop-blur-md overflow-hidden flex flex-col items-center justify-center"
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-40"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(0deg, rgba(239,68,68,0.0) 0px, rgba(239,68,68,0.07) 1px, rgba(0,0,0,0) 3px)",
+        }}
+      />
+      <motion.div
+        initial={{ scale: 0.85, opacity: 0 }}
+        animate={{
+          scale: 1,
+          opacity: 1,
+          x: [0, -4, 4, -3, 3, 0],
+        }}
+        transition={{ duration: 0.6 }}
+        className="relative flex flex-col items-center gap-3 px-6 text-center"
+      >
+        <div className="text-[10px] uppercase tracking-[0.5em] text-red-300/70">
+          // status
+        </div>
+        <div className="text-3xl md:text-5xl font-bold text-red-400 tracking-wide drop-shadow-[0_0_18px_rgba(239,68,68,0.7)]">
+          HACKING FAILED
+        </div>
+        <div className="text-red-200/80 font-mono text-xs md:text-sm">
+          ✗ ACCESS DENIED // retrying target...
+        </div>
+        <div className="mt-2 text-[10px] text-red-300/60 font-mono">
+          riprova con una nuova sequenza
+        </div>
       </motion.div>
     </motion.div>
   );
