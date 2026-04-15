@@ -185,6 +185,21 @@ Le icone sono già presenti nei progetti sorgente e verranno copiate in `public/
 5. **Page transition** — `AnimatePresence` + `motion.div` con wipe diagonale.
 6. **Lenis** — smooth scroll globale, inizializzato in un hook nel layout. Disabilitato se `prefers-reduced-motion`.
 
+## 8b. Responsive design
+
+Il sito deve essere **fully responsive**, ottimizzato sia per mobile che per desktop:
+
+- **Breakpoint Tailwind standard:** `sm` (640), `md` (768), `lg` (1024), `xl` (1280), `2xl` (1536).
+- **Mobile first** — layout base per mobile, upgrade a desktop con media queries.
+- **Griglia app:** 1 colonna < `sm`, 2 colonne `sm`-`md`, 3 colonne `lg`, 4 colonne `2xl`.
+- **Hero:** headline scala da `text-5xl` mobile a `text-8xl` desktop.
+- **Cursore custom:** disattivato su touch (`pointer: coarse`), cursore nativo preservato.
+- **Tilt 3D:** disattivato su touch.
+- **WebGL background:** pesantezza ridotta su mobile (meno particelle/linee).
+- **Pagina dedicata:** hero icona+testo in colonna su mobile, riga su desktop; galleria 1 col mobile → 2-3 col desktop.
+- **Tap target** minimi 44×44px su mobile.
+- **Test visuale** su viewport 375px, 768px, 1280px, 1920px.
+
 ## 9. Accessibilità
 
 - Rispetto di `prefers-reduced-motion`: tutte le animazioni non essenziali disattivate (WebGL freezato, tilt off, smooth scroll off, transizioni ridotte).
