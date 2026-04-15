@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
 import {
   motion,
   useMotionTemplate,
@@ -11,6 +10,7 @@ import {
   useTransform,
 } from "framer-motion";
 import type { AppMeta } from "@/lib/apps";
+import { useSettings } from "@/lib/settings";
 
 type Props = { app: AppMeta; index?: number };
 
@@ -83,7 +83,9 @@ function CardContent({ app }: { app: AppMeta }) {
 export function AppCard({ app, index = 0 }: Props) {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
-  const [lens, setLens] = useState<{ x: number; y: number } | null>(null);
+  const { favorites, toggleFavorite, intensity } = useSettings();
+  const isFav = favorites.includes(app.slug);
+  const tiltDisabled = intensity === "off";
 
   const rotateX = useTransform(y, [-0.5, 0.5], [8, -8]);
   const rotateY = useTransform(x, [-0.5, 0.5], [-10, 10]);
@@ -94,35 +96,66 @@ export function AppCard({ app, index = 0 }: Props) {
   const glowY = useTransform(y, [-0.5, 0.5], ["0%", "100%"]);
   const bg = useMotionTemplate`radial-gradient(600px circle at ${glowX} ${glowY}, ${app.accentColor}33, transparent 40%)`;
 
-  const LENS_RADIUS = 55;
-  const LENS_SCALE = 1.8;
-
   const onMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (tiltDisabled) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const px = e.clientX - rect.left;
-    const py = e.clientY - rect.top;
-    x.set(px / rect.width - 0.5);
-    y.set(py / rect.height - 0.5);
-    setLens({ x: px, y: py });
+    x.set((e.clientX - rect.left) / rect.width - 0.5);
+    y.set((e.clientY - rect.top) / rect.height - 0.5);
   };
   const onLeave = () => {
     x.set(0);
     y.set(0);
-    setLens(null);
   };
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, rotateY: -90, y: 20 }}
+      whileInView={{ opacity: 1, rotateY: 0, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.5, delay: Math.min(index * 0.05, 0.4) }}
-      style={{ perspective: 1200 }}
+      transition={{
+        duration: 0.7,
+        delay: index * 0.12,
+        ease: [0.22, 1, 0.36, 1],
+      }}
+      style={{ perspective: 1400, transformStyle: "preserve-3d" }}
       className="group relative h-full"
     >
+      <button
+        type="button"
+        data-cursor="hover"
+        aria-label={isFav ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
+        aria-pressed={isFav}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleFavorite(app.slug);
+        }}
+        className={`absolute top-3 right-3 z-30 size-9 rounded-full flex items-center justify-center transition-colors ${
+          isFav
+            ? "bg-white/10 text-yellow-300"
+            : "bg-black/40 text-white/40 hover:text-yellow-200 hover:bg-white/10"
+        }`}
+        style={
+          isFav
+            ? { boxShadow: "0 0 18px rgba(253,224,71,0.5)" }
+            : undefined
+        }
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill={isFav ? "currentColor" : "none"}
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinejoin="round"
+        >
+          <polygon points="12 2 15 9 22 9.5 17 14.5 18.5 22 12 18 5.5 22 7 14.5 2 9.5 9 9 12 2" />
+        </svg>
+      </button>
       <Link
         href={`/apps/${app.slug}`}
-        data-cursor="lens"
+        data-cursor="hover"
         aria-label={`Vedi dettagli di ${app.name}`}
         className="block h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 rounded-2xl"
       >
@@ -134,7 +167,7 @@ export function AppCard({ app, index = 0 }: Props) {
             rotateY: springRY,
             transformStyle: "preserve-3d",
           }}
-          className="relative h-full flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-5 md:p-6 overflow-hidden transition-colors min-h-[260px]"
+          className="relative h-full flex flex-col rounded-2xl border border-white/15 bg-[#0a0420]/85 backdrop-blur-xl p-5 md:p-6 overflow-hidden transition-colors min-h-[260px] shadow-[0_8px_30px_rgba(0,0,0,0.5)]"
         >
           <motion.div
             aria-hidden
@@ -150,41 +183,6 @@ export function AppCard({ app, index = 0 }: Props) {
           />
 
           <CardContent app={app} />
-
-          {/* Magnifier lens — zoomed clone clipped to a circle following the cursor */}
-          {lens && (
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0 z-20 rounded-2xl"
-              style={{
-                clipPath: `circle(${LENS_RADIUS}px at ${lens.x}px ${lens.y}px)`,
-                WebkitClipPath: `circle(${LENS_RADIUS}px at ${lens.x}px ${lens.y}px)`,
-              }}
-            >
-              {/* scaled copy of the card content */}
-              <div
-                className="absolute inset-0 flex flex-col p-5 md:p-6"
-                style={{
-                  transform: `scale(${LENS_SCALE})`,
-                  transformOrigin: `${lens.x}px ${lens.y}px`,
-                  background: "rgba(3,0,20,0.98)",
-                }}
-              >
-                <CardContent app={app} />
-              </div>
-              {/* lens frame glow */}
-              <div
-                className="absolute rounded-full"
-                style={{
-                  left: lens.x - LENS_RADIUS,
-                  top: lens.y - LENS_RADIUS,
-                  width: LENS_RADIUS * 2,
-                  height: LENS_RADIUS * 2,
-                  boxShadow: `inset 0 0 0 1.5px ${app.accentColor}, 0 0 24px ${app.accentColor}66, inset 0 0 18px ${app.accentColor}33`,
-                }}
-              />
-            </div>
-          )}
         </motion.div>
       </Link>
     </motion.div>

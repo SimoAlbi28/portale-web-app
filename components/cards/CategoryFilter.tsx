@@ -23,7 +23,7 @@ export function CategoryFilter({ active, onChange, counts }: Props) {
             className={`relative rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
               isActive
                 ? "text-black"
-                : "text-white/70 hover:text-white border border-white/15 bg-white/[0.02]"
+                : "text-white/80 hover:text-white border border-white/20 bg-[#0a0420]/85 backdrop-blur-md shadow-[0_4px_16px_rgba(0,0,0,0.4)]"
             }`}
             aria-pressed={isActive}
           >

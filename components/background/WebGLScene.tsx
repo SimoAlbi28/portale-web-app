@@ -3,11 +3,22 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { THEMES, useSettings } from "@/lib/settings";
 
 function Grid() {
   const mat = useRef<THREE.ShaderMaterial>(null);
   const mouse = useRef({ x: 0, y: 0 });
   const { size } = useThree();
+  const { theme, intensity } = useSettings();
+  const palette = THEMES[theme].webgl;
+
+  // update shader colors when theme changes
+  useEffect(() => {
+    if (!mat.current) return;
+    (mat.current.uniforms.uColorA.value as THREE.Color).set(palette.a);
+    (mat.current.uniforms.uColorB.value as THREE.Color).set(palette.b);
+    (mat.current.uniforms.uColorC.value as THREE.Color).set(palette.c);
+  }, [palette.a, palette.b, palette.c]);
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
@@ -23,9 +34,9 @@ function Grid() {
       uTime: { value: 0 },
       uMouse: { value: new THREE.Vector2(0, 0) },
       uRes: { value: new THREE.Vector2(size.width, size.height) },
-      uColorA: { value: new THREE.Color("#22d3ee") },
-      uColorB: { value: new THREE.Color("#a855f7") },
-      uColorC: { value: new THREE.Color("#ec4899") },
+      uColorA: { value: new THREE.Color(palette.a) },
+      uColorB: { value: new THREE.Color(palette.b) },
+      uColorC: { value: new THREE.Color(palette.c) },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
@@ -33,10 +44,17 @@ function Grid() {
 
   useFrame((state) => {
     if (!mat.current) return;
-    mat.current.uniforms.uTime.value = state.clock.getElapsedTime();
+    // Freeze time in light mode for a calm, static-but-visible grid
+    mat.current.uniforms.uTime.value =
+      intensity === "light" ? 1.5 : state.clock.getElapsedTime();
     const u = mat.current.uniforms.uMouse.value as THREE.Vector2;
-    u.x += (mouse.current.x - u.x) * 0.05;
-    u.y += (mouse.current.y - u.y) * 0.05;
+    if (intensity === "light") {
+      u.x += (0 - u.x) * 0.1;
+      u.y += (0 - u.y) * 0.1;
+    } else {
+      u.x += (mouse.current.x - u.x) * 0.05;
+      u.y += (mouse.current.y - u.y) * 0.05;
+    }
     const r = mat.current.uniforms.uRes.value as THREE.Vector2;
     r.set(state.size.width, state.size.height);
   });
@@ -136,15 +154,19 @@ function Grid() {
 }
 
 export function WebGLScene() {
-  const [enabled, setEnabled] = useState(true);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const { intensity, theme } = useSettings();
 
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const update = () => setEnabled(!reduced.matches);
+    const update = () => setReducedMotion(reduced.matches);
     update();
     reduced.addEventListener?.("change", update);
     return () => reduced.removeEventListener?.("change", update);
   }, []);
+
+  const enabled =
+    !reducedMotion && intensity !== "off" && theme !== "minimal";
 
   if (!enabled) {
     return (

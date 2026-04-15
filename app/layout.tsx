@@ -4,6 +4,11 @@ import "./globals.css";
 import { CustomCursor } from "@/components/cursor/CustomCursor";
 import { WebGLBackground } from "@/components/background/WebGLBackground";
 import { SmoothScroll } from "@/components/transitions/SmoothScroll";
+import { BootSequence } from "@/components/intro/BootSequence";
+import { CommandPalette } from "@/components/search/CommandPalette";
+import { EasterEgg } from "@/components/effects/EasterEgg";
+import { SettingsProvider } from "@/lib/settings";
+import { SettingsPanel } from "@/components/settings/SettingsPanel";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,11 +37,17 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} antialiased`}
     >
       <body className="has-custom-cursor flex flex-col relative">
-        <WebGLBackground />
-        <div className="noise" aria-hidden />
-        <SmoothScroll />
-        <CustomCursor />
-        <main className="relative z-10 flex-1 flex flex-col">{children}</main>
+        <SettingsProvider>
+          <WebGLBackground />
+          <div className="noise" aria-hidden />
+          <SmoothScroll />
+          <CustomCursor />
+          <CommandPalette />
+          <SettingsPanel />
+          <EasterEgg />
+          <BootSequence />
+          <main className="relative z-10 flex-1 flex flex-col">{children}</main>
+        </SettingsProvider>
       </body>
     </html>
   );

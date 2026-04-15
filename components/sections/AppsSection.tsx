@@ -1,13 +1,24 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { apps, type AppCategory } from "@/lib/apps";
 import { AppCard } from "@/components/cards/AppCard";
+import { AppListRow } from "@/components/cards/AppListRow";
 import { CategoryFilter } from "@/components/cards/CategoryFilter";
+import { useSettings, type Sort } from "@/lib/settings";
 
 export function AppsSection() {
   const [active, setActive] = useState<AppCategory | "all">("all");
+  const {
+    favorites,
+    showFavoritesOnly,
+    setShowFavoritesOnly,
+    view,
+    setView,
+    sort,
+    setSort,
+  } = useSettings();
 
   const counts = useMemo(() => {
     const base: Record<AppCategory | "all", number> = {
@@ -21,15 +32,35 @@ export function AppsSection() {
     return base;
   }, []);
 
-  const filtered = useMemo(
-    () => (active === "all" ? apps : apps.filter((a) => a.category === active)),
-    [active]
-  );
+  const filtered = useMemo(() => {
+    let list =
+      active === "all" ? apps : apps.filter((a) => a.category === active);
+    if (showFavoritesOnly) list = list.filter((a) => favorites.includes(a.slug));
+    const sorted = [...list];
+    if (sort === "alpha") {
+      sorted.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sort === "random") {
+      sorted.sort(() => Math.random() - 0.5);
+    } else {
+      // "category" default: category asc, then alpha
+      sorted.sort(
+        (a, b) =>
+          a.category.localeCompare(b.category) || a.name.localeCompare(b.name)
+      );
+    }
+    return sorted;
+  }, [active, showFavoritesOnly, favorites, sort]);
+
+  const sortOptions: { id: Sort; label: string }[] = [
+    { id: "category", label: "Categoria" },
+    { id: "alpha", label: "A → Z" },
+    { id: "random", label: "Random" },
+  ];
 
   return (
     <section
       id="apps"
-      className="relative mx-auto w-full max-w-7xl px-6 md:px-10 py-24 md:py-32"
+      className="relative mx-auto w-full max-w-7xl px-6 md:px-10 py-12 md:py-16"
     >
       <motion.div
         initial={{ opacity: 0, y: 24 }}
@@ -50,19 +81,146 @@ export function AppsSection() {
             card per scoprire di più.
           </p>
         </div>
-        <div className="flex justify-center w-full">
+
+        <div className="flex flex-col items-center gap-4 w-full">
           <CategoryFilter active={active} onChange={setActive} counts={counts} />
+
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {/* Favorites toggle */}
+            <button
+              type="button"
+              data-cursor="hover"
+              onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+              aria-pressed={showFavoritesOnly}
+              className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs border transition-colors ${
+                showFavoritesOnly
+                  ? "border-yellow-300/60 bg-yellow-300/10 text-yellow-200"
+                  : "border-white/10 bg-white/[0.02] text-white/60 hover:text-white"
+              }`}
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill={showFavoritesOnly ? "currentColor" : "none"}
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinejoin="round"
+              >
+                <polygon points="12 2 15 9 22 9.5 17 14.5 18.5 22 12 18 5.5 22 7 14.5 2 9.5 9 9 12 2" />
+              </svg>
+              Preferiti
+              <span className="text-[10px] tabular-nums opacity-60">
+                {favorites.length}
+              </span>
+            </button>
+
+            {/* Sort */}
+            <div className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-[#0a0420]/85 backdrop-blur-md shadow-[0_4px_16px_rgba(0,0,0,0.4)] p-0.5 text-xs">
+              <span className="px-2 text-white/40 uppercase tracking-widest text-[10px]">
+                Ordina
+              </span>
+              {sortOptions.map((o) => (
+                <button
+                  key={o.id}
+                  type="button"
+                  data-cursor="hover"
+                  onClick={() => setSort(o.id)}
+                  className={`rounded-full px-2.5 py-1 transition-colors ${
+                    sort === o.id
+                      ? "bg-white/10 text-white"
+                      : "text-white/50 hover:text-white"
+                  }`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+
+            {/* View toggle */}
+            <div className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-[#0a0420]/85 backdrop-blur-md shadow-[0_4px_16px_rgba(0,0,0,0.4)] p-0.5 text-xs">
+              <button
+                type="button"
+                data-cursor="hover"
+                onClick={() => setView("grid")}
+                aria-label="Vista a griglia"
+                aria-pressed={view === "grid"}
+                className={`rounded-full px-2.5 py-1.5 transition-colors ${
+                  view === "grid"
+                    ? "bg-white/10 text-white"
+                    : "text-white/50 hover:text-white"
+                }`}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+              <button
+                type="button"
+                data-cursor="hover"
+                onClick={() => setView("list")}
+                aria-label="Vista a lista"
+                aria-pressed={view === "list"}
+                className={`rounded-full px-2.5 py-1.5 transition-colors ${
+                  view === "list"
+                    ? "bg-white/10 text-white"
+                    : "text-white/50 hover:text-white"
+                }`}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M4 6h16M4 12h16M4 18h16"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
       </motion.div>
 
-      <motion.div
-        layout
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5 md:gap-6"
-      >
-        {filtered.map((app, i) => (
-          <AppCard key={app.slug} app={app} index={i} />
-        ))}
-      </motion.div>
+      <AnimatePresence mode="wait">
+        {filtered.length === 0 ? (
+          <motion.div
+            key="empty"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="rounded-2xl border border-dashed border-white/10 p-12 text-center text-white/40"
+          >
+            {showFavoritesOnly
+              ? "Nessuna app tra i preferiti. Clicca la stellina sulle card per aggiungerle."
+              : "Nessuna app in questa categoria."}
+          </motion.div>
+        ) : view === "grid" ? (
+          <motion.div
+            key={`grid-${sort}-${active}-${showFavoritesOnly}`}
+            layout
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5 md:gap-6"
+          >
+            {filtered.map((app, i) => (
+              <AppCard key={app.slug} app={app} index={i} />
+            ))}
+          </motion.div>
+        ) : (
+          <motion.div
+            key={`list-${sort}-${active}-${showFavoritesOnly}`}
+            layout
+            className="flex flex-col gap-2"
+          >
+            {filtered.map((app, i) => (
+              <AppListRow key={app.slug} app={app} index={i} />
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

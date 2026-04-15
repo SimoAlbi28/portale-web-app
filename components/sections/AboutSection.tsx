@@ -6,7 +6,7 @@ export function AboutSection() {
   return (
     <section
       id="about"
-      className="relative mx-auto w-full max-w-5xl px-6 md:px-10 py-20 md:py-28"
+      className="relative mx-auto w-full max-w-5xl px-6 md:px-10 py-10 md:py-14"
     >
       <motion.div
         initial={{ opacity: 0, y: 30 }}
