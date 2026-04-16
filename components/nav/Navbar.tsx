@@ -59,6 +59,11 @@ export function Navbar() {
 
   const scrollTo = useCallback((href: string) => {
     setMobileOpen(false);
+    // If not on homepage, navigate there first
+    if (window.location.pathname !== "/") {
+      window.location.href = "/" + href;
+      return;
+    }
     if (href === "#home") {
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
