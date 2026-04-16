@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   THEMES,
@@ -9,7 +10,7 @@ import {
   type Theme,
 } from "@/lib/settings";
 
-export function SettingsPanel() {
+export function SettingsPanel({ inline = false }: { inline?: boolean }) {
   const [open, setOpen] = useState(false);
   const {
     theme,
@@ -31,7 +32,11 @@ export function SettingsPanel() {
         data-cursor="hover"
         onClick={() => setOpen((o) => !o)}
         aria-label="Impostazioni"
-        className="fixed bottom-6 left-6 z-40 flex items-center gap-2 rounded-full border border-white/15 bg-black/60 backdrop-blur-md w-11 h-11 justify-center text-white/70 hover:text-white hover:border-cyan-300/60 transition-all shadow-[0_0_24px_rgba(34,211,238,0.15)]"
+        className={
+          inline
+            ? "relative flex items-center justify-center size-9 rounded-full border border-white/15 text-white/60 hover:text-white hover:border-cyan-300/60 transition-all"
+            : "fixed top-6 right-6 z-40 flex items-center gap-2 rounded-full border border-white/15 bg-black/60 backdrop-blur-md w-11 h-11 justify-center text-white/70 hover:text-white hover:border-cyan-300/60 transition-all shadow-[0_0_24px_rgba(34,211,238,0.15)]"
+        }
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
           <path
@@ -49,22 +54,23 @@ export function SettingsPanel() {
         </svg>
       </button>
 
-      <AnimatePresence>
-        {open && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setOpen(false)}
-              className="fixed inset-0 z-[140] bg-black/30 backdrop-blur-[2px]"
-            />
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ type: "spring", stiffness: 300, damping: 28 }}
-              className="fixed bottom-24 left-6 z-[150] w-[min(340px,calc(100vw-3rem))] rounded-2xl border border-white/10 bg-[#07021c]/95 backdrop-blur-xl shadow-[0_0_60px_rgba(168,85,247,0.3)] p-5"
+      {typeof document !== "undefined" && createPortal(
+        <AnimatePresence>
+          {open && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setOpen(false)}
+                className="fixed inset-0 z-[140] bg-black/30 backdrop-blur-[2px]"
+              />
+              <motion.div
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ type: "spring", stiffness: 300, damping: 28 }}
+                className="fixed top-20 right-6 z-[150] w-[min(340px,calc(100vw-3rem))] rounded-2xl border border-white/10 bg-[#07021c]/95 backdrop-blur-xl shadow-[0_0_60px_rgba(168,85,247,0.3)] p-5"
             >
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-sm uppercase tracking-[0.3em] font-mono text-cyan-300">
@@ -166,10 +172,12 @@ export function SettingsPanel() {
                   })}
                 </div>
               </section>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </>
   );
 }

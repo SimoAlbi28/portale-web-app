@@ -132,13 +132,13 @@ export function AppCard({ app, index = 0 }: Props) {
         }}
         className={`absolute top-3 right-3 z-30 size-9 rounded-full flex items-center justify-center transition-colors ${
           isFav
-            ? "bg-white/10 text-yellow-300"
-            : "bg-black/40 text-white/40 hover:text-yellow-200 hover:bg-white/10"
+            ? "bg-yellow-300/20 text-yellow-300 border border-yellow-300/40"
+            : "bg-black/60 text-white/70 border border-white/20 hover:text-yellow-200 hover:bg-white/10 hover:border-yellow-300/40"
         }`}
         style={
           isFav
             ? { boxShadow: "0 0 18px rgba(253,224,71,0.5)" }
-            : undefined
+            : { boxShadow: "0 0 8px rgba(0,0,0,0.4)" }
         }
       >
         <svg

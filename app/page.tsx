@@ -1,7 +1,7 @@
 import { Hero } from "@/components/hero/Hero";
 import { AboutSection } from "@/components/sections/AboutSection";
 import { AppsSection } from "@/components/sections/AppsSection";
-import { InlineSearch } from "@/components/search/InlineSearch";
+import { ContactSection } from "@/components/sections/ContactSection";
 import { Footer } from "@/components/ui/Footer";
 
 export default function HomePage() {
@@ -9,8 +9,8 @@ export default function HomePage() {
     <>
       <Hero />
       <AboutSection />
-      <InlineSearch />
       <AppsSection />
+      <ContactSection />
       <Footer />
     </>
   );

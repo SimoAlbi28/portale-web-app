@@ -1,14 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useRef } from "react";
 
-type LineKind = "info" | "ok" | "warn" | "dim" | "prog" | "ascii";
-type Line = {
-  text: string;
-  kind?: LineKind;
-  progress?: number; // 0..1 when kind === "prog"
-};
+type Line = { text: string; kind?: string };
 
 const ASCII = [
   "  ____          _ _         _    ____  ____  ____  ",
@@ -30,7 +24,7 @@ const SEQUENCE: Line[] = [
   { text: "BIOS v4.2.1 :: POST ............................ ok", kind: "info" },
   { text: "Detecting CPU: quantum-core x64 @ 4.8 GHz", kind: "dim" },
   { text: "Mounting /dev/sda1 as read-write ................ ok", kind: "info" },
-  { text: "Loading kernel modules [████████░░] 80%", kind: "prog", progress: 0.8 },
+  { text: "Loading kernel modules [████████░░] 80%", kind: "prog" },
   { text: "insmod: crypto_aes_256_gcm ...................... ok", kind: "ok" },
   { text: "insmod: net_tcp_stack ........................... ok", kind: "ok" },
   { text: "insmod: webgl_driver_v3 ......................... ok", kind: "ok" },
@@ -38,7 +32,7 @@ const SEQUENCE: Line[] = [
   { text: "> initializing ssl context [TLS_AES_256_GCM_SHA384]", kind: "info" },
   { text: "  handshake complete :: rsa-2048 + sha-512", kind: "dim" },
   { text: "> mounting virtual filesystem ................... ok", kind: "info" },
-  { text: "> registering app_registry [#########]  100%", kind: "prog", progress: 1 },
+  { text: "> registering app_registry [#########]  100%", kind: "prog" },
   { text: "  [ok] farmaci          ::  mounted", kind: "ok" },
   { text: "  [ok] green-village    ::  mounted", kind: "ok" },
   { text: "  [ok] manutenzioni     ::  mounted", kind: "ok" },
@@ -58,148 +52,129 @@ const SEQUENCE: Line[] = [
   { text: "> system ready. welcome, user.", kind: "ok" },
 ];
 
-const LINE_DELAY = 55; // ms per line append
+const LINE_DELAY = 55;
+const FADEOUT_DELAY = SEQUENCE.length * LINE_DELAY + 600;
+
+const COLOR_MAP: Record<string, string> = {
+  ok: "text-emerald-300",
+  warn: "text-yellow-300",
+  dim: "text-cyan-300/50",
+  ascii: "text-cyan-300",
+  prog: "text-cyan-100/90",
+  info: "text-cyan-100/90",
+};
+
+function hide(el: HTMLElement) {
+  el.style.opacity = "0";
+  el.style.visibility = "hidden";
+  el.style.pointerEvents = "none";
+  try { sessionStorage.setItem("boot-done", "1"); } catch { /* ignore */ }
+}
 
 export function BootSequence() {
-  const [visible, setVisible] = useState(true);
-  const [lineIndex, setLineIndex] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    const el = ref.current;
+    if (!el) return;
+
+    // Skip entirely on mobile/touch
+    const isMobile = "ontouchstart" in window || window.innerWidth < 768;
+    if (isMobile) {
+      el.style.display = "none";
+      try { sessionStorage.setItem("boot-done", "1"); } catch { /* ignore */ }
+      return;
+    }
+
+    // Already seen — hide immediately
+    try {
+      if (sessionStorage.getItem("boot-done") === "1") {
+        el.style.display = "none";
+        return;
+      }
+    } catch { /* ignore */ }
+
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setVisible(false);
+      el.style.display = "none";
       return;
     }
-    if (sessionStorage.getItem("boot-done") === "1") {
-      setVisible(false);
-      return;
-    }
-    const t = setInterval(() => {
-      setLineIndex((i) => {
-        if (i + 1 >= SEQUENCE.length) {
-          clearInterval(t);
-          setTimeout(() => {
-            sessionStorage.setItem("boot-done", "1");
-            setVisible(false);
-          }, 700);
-          return i + 1;
-        }
-        return i + 1;
-      });
-    }, LINE_DELAY);
-    return () => clearInterval(t);
+
+    // Skip on click / touch — direct DOM, no React
+    const skip = () => hide(el);
+    el.addEventListener("click", skip);
+    el.addEventListener("touchend", skip);
+
+    // Auto-dismiss: CSS transition on opacity, triggered after delay
+    // Using inline transition + class toggle is the most reliable cross-browser
+    el.style.transition = "opacity 0.5s ease-out, visibility 0s linear 0.5s";
+
+    const timer = setTimeout(() => hide(el), FADEOUT_DELAY);
+
+    return () => {
+      clearTimeout(timer);
+      el.removeEventListener("click", skip);
+      el.removeEventListener("touchend", skip);
+    };
   }, []);
 
-  // Auto-scroll container so latest line is visible
-  useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollTop = containerRef.current.scrollHeight;
-    }
-  }, [lineIndex]);
-
-  const skip = () => {
-    sessionStorage.setItem("boot-done", "1");
-    setVisible(false);
-  };
-
   return (
-    <AnimatePresence>
-      {visible && (
-        <motion.div
-          initial={{ opacity: 1 }}
-          exit={{ opacity: 0, filter: "blur(8px)" }}
-          transition={{ duration: 0.5 }}
-          onClick={skip}
-          className="fixed inset-0 z-[200] bg-[#020014] flex items-center justify-center font-mono text-xs md:text-sm cursor-pointer overflow-hidden"
-        >
-          {/* CRT scanline overlay */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 opacity-30"
-            style={{
-              backgroundImage:
-                "repeating-linear-gradient(0deg, rgba(34,211,238,0.0) 0px, rgba(34,211,238,0.06) 1px, rgba(0,0,0,0) 3px)",
-            }}
-          />
-          {/* subtle radial vignette */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0"
-            style={{
-              background:
-                "radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.7) 100%)",
-            }}
-          />
+    <div
+      ref={ref}
+      className="fixed inset-0 z-[200] bg-[#020014] flex items-center justify-center font-mono text-xs md:text-sm cursor-pointer overflow-hidden"
+    >
+      {/* CRT scanline */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-30"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(0deg, rgba(34,211,238,0) 0px, rgba(34,211,238,0.06) 1px, rgba(0,0,0,0) 3px)",
+        }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.7) 100%)",
+        }}
+      />
 
-          <div className="relative w-full max-w-2xl px-6 text-center">
-            {/* header badge */}
-            <div className="mb-4 flex items-center justify-center gap-2 text-cyan-300">
-              <span className="size-2 rounded-full bg-cyan-300 animate-pulse shadow-[0_0_12px_theme(colors.cyan.300)]" />
-              <span className="uppercase tracking-[0.4em] text-xs">
-                daily_apps // system
-              </span>
-            </div>
+      <div className="relative w-full max-w-2xl px-6 text-center">
+        <div className="mb-4 flex items-center justify-center gap-2 text-cyan-300">
+          <span className="size-2 rounded-full bg-cyan-300 animate-pulse shadow-[0_0_12px_theme(colors.cyan.300)]" />
+          <span className="uppercase tracking-[0.4em] text-xs">
+            daily_apps // system
+          </span>
+        </div>
 
-            {/* terminal frame */}
-            <div className="rounded-lg border border-cyan-400/30 bg-black/60 backdrop-blur-sm shadow-[0_0_40px_rgba(34,211,238,0.15)] text-center overflow-hidden">
-              <div className="flex items-center gap-1.5 border-b border-cyan-400/20 px-3 py-2 text-left">
-                <span className="size-2 rounded-full bg-red-500/70" />
-                <span className="size-2 rounded-full bg-yellow-500/70" />
-                <span className="size-2 rounded-full bg-emerald-500/70" />
-                <span className="ml-3 text-[10px] uppercase tracking-[0.3em] text-cyan-300/70">
-                  /bin/boot
-                </span>
-                <span className="ml-auto text-[10px] text-cyan-300/50 tabular-nums">
-                  {String(Math.min(lineIndex + 1, SEQUENCE.length)).padStart(
-                    2,
-                    "0"
-                  )}
-                  /{SEQUENCE.length}
-                </span>
-              </div>
-
-              <div
-                ref={containerRef}
-                className="h-[55vh] md:h-[60vh] overflow-hidden px-4 md:px-6 py-4 leading-[1.45]"
-              >
-                {SEQUENCE.slice(0, lineIndex + 1).map((l, i) => {
-                  const color =
-                    l.kind === "ok"
-                      ? "text-emerald-300"
-                      : l.kind === "warn"
-                      ? "text-yellow-300"
-                      : l.kind === "dim"
-                      ? "text-cyan-300/50"
-                      : l.kind === "ascii"
-                      ? "text-cyan-300"
-                      : "text-cyan-100/90";
-                  const isLast = i === lineIndex;
-                  const isDone = lineIndex >= SEQUENCE.length - 1;
-                  return (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, x: -6 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.12 }}
-                      className={`whitespace-pre ${color}`}
-                    >
-                      {l.text}
-                      {isLast && !isDone && l.kind !== "ascii" && (
-                        <span className="inline-block w-2 h-3.5 bg-cyan-300 animate-pulse ml-1 align-middle" />
-                      )}
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="mt-5 text-[10px] uppercase tracking-[0.3em] text-white/35">
-              click anywhere to skip
-            </div>
+        <div className="rounded-lg border border-cyan-400/30 bg-black/60 backdrop-blur-sm shadow-[0_0_40px_rgba(34,211,238,0.15)] overflow-hidden">
+          <div className="flex items-center gap-1.5 border-b border-cyan-400/20 px-3 py-2 text-left">
+            <span className="size-2 rounded-full bg-red-500/70" />
+            <span className="size-2 rounded-full bg-yellow-500/70" />
+            <span className="size-2 rounded-full bg-emerald-500/70" />
+            <span className="ml-3 text-[10px] uppercase tracking-[0.3em] text-cyan-300/70">
+              /bin/boot
+            </span>
           </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+
+          <div className="h-[55vh] md:h-[60vh] overflow-y-auto px-4 md:px-6 py-4 leading-[1.45] text-left">
+            {SEQUENCE.map((l, i) => (
+              <div
+                key={i}
+                className={`whitespace-pre boot-line ${COLOR_MAP[l.kind ?? "info"]}`}
+                style={{ animationDelay: `${i * LINE_DELAY}ms` }}
+              >
+                {l.text}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-5 text-[10px] uppercase tracking-[0.3em] text-white/35">
+          click anywhere to skip
+        </div>
+      </div>
+    </div>
   );
 }

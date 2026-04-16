@@ -6,7 +6,7 @@ import { HackingGame } from "@/components/game/HackingGame";
 
 export function Hero() {
   return (
-    <section className="relative min-h-[100svh] flex flex-col items-center overflow-hidden pt-16 pb-8 md:pt-20 md:pb-10">
+    <section id="home" className="relative min-h-[100svh] flex flex-col items-center overflow-hidden pt-16 pb-8 md:pt-20 md:pb-10">
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_25%,rgba(3,0,20,0.7)_55%,rgba(3,0,20,0.85)_75%,rgba(3,0,20,0.4)_92%,rgba(3,0,20,0)_100%)]" />
 
       {/* Top: title + tagline + button */}
@@ -29,9 +29,12 @@ export function Hero() {
               sempre a portata di mano
             </span>
           </h1>
-          <p className="max-w-xl text-base md:text-lg text-white/80 leading-snug mx-auto font-light">
-            Otto app. Un solo launcher.{" "}
-            <span className="text-cyan-300 font-medium">Zero caos.</span>
+          <p className="max-w-xl text-base md:text-lg text-white/80 leading-relaxed mx-auto font-light">
+            Scopri una collezione di web app pensate per{" "}
+            <span className="text-cyan-300 font-medium">semplificarti la vita</span>:
+            dalla gestione dei farmaci alle timbrature, dai pagamenti al diario
+            scolastico. Tutto ciò che ti serve per organizzare al meglio la tua
+            quotidianità, in un unico posto.
           </p>
           <div className="flex justify-center">
             <ExploreButton />
@@ -40,7 +43,18 @@ export function Hero() {
       </div>
 
       {/* Middle: game */}
-      <div className="relative w-full mt-6 md:mt-8 flex-1 flex items-center">
+      <div id="game" className="relative w-full mt-6 md:mt-8 flex-1 flex flex-col items-center">
+        <div className="text-center mb-4">
+          <span className="text-xs uppercase tracking-[0.3em] text-cyan-300 font-mono">
+            // Mini Game
+          </span>
+          <h3 className="text-xl md:text-2xl font-bold tracking-tight mt-1">
+            Hacker <span className="text-glow-cyan text-cyan-300">Game</span>
+          </h3>
+          <p className="text-white/50 text-sm mt-1 max-w-md mx-auto">
+            Metti alla prova le tue abilità: trascina le lettere negli slot giusti per crackare la password. 100 livelli, difficoltà crescente.
+          </p>
+        </div>
         <HackingGame />
       </div>
 

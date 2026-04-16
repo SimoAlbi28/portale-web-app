@@ -8,7 +8,7 @@ import { BootSequence } from "@/components/intro/BootSequence";
 import { CommandPalette } from "@/components/search/CommandPalette";
 import { EasterEgg } from "@/components/effects/EasterEgg";
 import { SettingsProvider } from "@/lib/settings";
-import { SettingsPanel } from "@/components/settings/SettingsPanel";
+import { Navbar } from "@/components/nav/Navbar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,7 +43,7 @@ export default function RootLayout({
           <SmoothScroll />
           <CustomCursor />
           <CommandPalette />
-          <SettingsPanel />
+          <Navbar />
           <EasterEgg />
           <BootSequence />
           <main className="relative z-10 flex-1 flex flex-col">{children}</main>

@@ -35,7 +35,7 @@ type SettingsCtx = Settings & {
 const DEFAULTS: Settings = {
   theme: "cyberpunk",
   intensity: "full",
-  view: "grid",
+  view: "list",
   sort: "category",
   favorites: [],
   showFavoritesOnly: false,
@@ -99,28 +99,38 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<Settings>(DEFAULTS);
   const [hydrated, setHydrated] = useState(false);
 
-  // hydrate from localStorage
+  // hydrate from localStorage, then override with Supabase if logged in
   useEffect(() => {
+    // 1. Load local first (instant)
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<Settings>;
         setState((s) => ({ ...s, ...parsed }));
       }
-    } catch {
-      /* ignore */
-    }
+    } catch { /* ignore */ }
     setHydrated(true);
+
+    // 2. Then load from Supabase (async, overrides local if logged in)
+    import("@/lib/supabase/sync").then(({ loadUserData }) =>
+      loadUserData().then((data) => {
+        if (data?.settings) {
+          setState((s) => ({ ...s, ...data.settings }));
+        }
+      })
+    ).catch(() => { /* ignore */ });
   }, []);
 
-  // persist
+  // persist to localStorage + Supabase
   useEffect(() => {
     if (!hydrated) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      /* ignore */
-    }
+    } catch { /* ignore */ }
+    // Async save to Supabase (fire & forget)
+    import("@/lib/supabase/sync").then(({ saveSettings }) =>
+      saveSettings(state)
+    ).catch(() => { /* ignore */ });
   }, [state, hydrated]);
 
   // apply theme vars + body class for intensity

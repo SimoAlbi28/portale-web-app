@@ -90,8 +90,8 @@ export function AppListRow({ app, index = 0 }: { app: AppMeta; index?: number })
         onClick={() => toggleFavorite(app.slug)}
         className={`absolute top-1/2 -translate-y-1/2 right-[100%] mr-2 size-8 rounded-full hidden md:flex items-center justify-center transition-colors ${
           isFav
-            ? "text-yellow-300"
-            : "text-white/30 hover:text-yellow-200"
+            ? "text-yellow-300 bg-yellow-300/15"
+            : "text-white/60 bg-black/40 border border-white/15 hover:text-yellow-200 hover:border-yellow-300/40"
         }`}
       >
         <svg

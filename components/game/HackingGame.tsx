@@ -109,7 +109,7 @@ export function HackingGame() {
   // Keep tilesRef in sync so timeouts can read the latest committed tiles
   tilesRef.current = tiles;
 
-  // Hydrate
+  // Hydrate from localStorage, then override with Supabase if logged in
   useEffect(() => {
     const s = loadState();
     setState(s);
@@ -117,12 +117,29 @@ export function HackingGame() {
     setWord(w);
     setTiles(buildTiles(w));
     setHydrated(true);
+
+    // Load from Supabase (async, overrides local if logged in)
+    import("@/lib/supabase/sync").then(({ loadUserData }) =>
+      loadUserData().then((data) => {
+        if (data?.game_state) {
+          const gs = data.game_state;
+          setState(gs);
+          saveState(gs);
+          const nw = pickWordForLevel(gs.level);
+          setWord(nw);
+          setTiles(buildTiles(nw));
+        }
+      })
+    ).catch(() => { /* ignore */ });
   }, []);
 
-  // Persist
+  // Persist to localStorage + Supabase
   useEffect(() => {
     if (!hydrated) return;
     saveState(state);
+    import("@/lib/supabase/sync").then(({ saveGameState }) =>
+      saveGameState(state)
+    ).catch(() => { /* ignore */ });
   }, [state, hydrated]);
 
   const startNewLevel = useCallback(
@@ -275,24 +292,41 @@ export function HackingGame() {
   }, [status]);
 
   // Step 2: success → advance to next level
+  // If the current row has incomplete levels, go to the first one.
+  // Only advance to the next row when all 10 levels in the current row are done.
   useEffect(() => {
     if (status !== "success") return;
     const newCompleted = Array.from(
       new Set([...state.completed, state.level])
     );
-    const nextLevel = Math.min(TOTAL_LEVELS, state.level + 1);
     const isFinalWin =
       state.level === TOTAL_LEVELS && newCompleted.length === TOTAL_LEVELS;
+
+    // Find the current row (1-10, 11-20, etc.)
+    const rowStart = Math.floor((state.level - 1) / 10) * 10 + 1;
+    const rowEnd = Math.min(rowStart + 9, TOTAL_LEVELS);
+
+    // First incomplete level in the current row
+    let nextLevel = -1;
+    for (let l = rowStart; l <= rowEnd; l++) {
+      if (!newCompleted.includes(l)) {
+        nextLevel = l;
+        break;
+      }
+    }
+
+    // If entire row is complete, go to first level of the next row
+    if (nextLevel === -1) {
+      nextLevel = Math.min(rowEnd + 1, TOTAL_LEVELS);
+    }
 
     const id = setTimeout(() => {
       setState({ level: nextLevel, completed: newCompleted });
       if (isFinalWin) {
         setStatus("idle");
         setShowCertificate(true);
-      } else if (state.level < TOTAL_LEVELS) {
-        startNewLevel(nextLevel);
       } else {
-        setStatus("idle");
+        startNewLevel(nextLevel);
       }
     }, 600);
     return () => clearTimeout(id);

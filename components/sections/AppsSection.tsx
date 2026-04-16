@@ -10,6 +10,7 @@ import { useSettings, type Sort } from "@/lib/settings";
 
 export function AppsSection() {
   const [active, setActive] = useState<AppCategory | "all">("all");
+  const [search, setSearch] = useState("");
   const {
     favorites,
     showFavoritesOnly,
@@ -36,6 +37,14 @@ export function AppsSection() {
     let list =
       active === "all" ? apps : apps.filter((a) => a.category === active);
     if (showFavoritesOnly) list = list.filter((a) => favorites.includes(a.slug));
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (a) =>
+          a.name.toLowerCase().includes(q) ||
+          a.tagline.toLowerCase().includes(q)
+      );
+    }
     const sorted = [...list];
     if (sort === "alpha") {
       sorted.sort((a, b) => a.name.localeCompare(b.name));
@@ -49,7 +58,7 @@ export function AppsSection() {
       );
     }
     return sorted;
-  }, [active, showFavoritesOnly, favorites, sort]);
+  }, [active, showFavoritesOnly, favorites, sort, search]);
 
   const sortOptions: { id: Sort; label: string }[] = [
     { id: "category", label: "Categoria" },
@@ -73,16 +82,50 @@ export function AppsSection() {
           <span className="text-xs uppercase tracking-[0.3em] text-cyan-300 font-mono">
             // Collection
           </span>
-          <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
-            Tutte le <span className="text-glow-cyan text-cyan-300">web app</span>
+          <h2 className="text-4xl md:text-5xl font-bold tracking-tight uppercase">
+            <span className="text-glow-cyan text-cyan-300">Web App</span>
           </h2>
-          <p className="max-w-xl text-white/60">
+          <p className="max-w-xl text-white text-base">
             {apps.length} strumenti per la vita di tutti i giorni. Clicca una
             card per scoprire di più.
           </p>
+          <p className="max-w-xl text-white/80 text-base leading-relaxed">
+            Ogni app è realizzata come esempio dimostrativo. L&apos;estetica e le
+            funzionalità possono essere{" "}
+            <span className="text-cyan-300 font-semibold">personalizzate su misura</span> per
+            la tua azienda o i tuoi gusti personali.
+          </p>
+          <a
+            href="#contatti"
+            data-cursor="hover"
+            onClick={(e) => {
+              e.preventDefault();
+              document.querySelector("#contatti")?.scrollIntoView({ behavior: "smooth" });
+            }}
+            className="inline-flex items-center gap-2 rounded-full border border-cyan-300/40 bg-cyan-300/[0.06] px-5 py-2 text-sm text-cyan-300 hover:bg-cyan-300/15 hover:border-cyan-300/60 transition-all shadow-[0_0_20px_rgba(34,211,238,0.1)] hover:shadow-[0_0_25px_rgba(34,211,238,0.2)]"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            Contatta il creatore
+          </a>
         </div>
 
         <div className="flex flex-col items-center gap-4 w-full">
+          {/* Search */}
+          <div className="relative w-full max-w-md">
+            <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+            </svg>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Cerca un'app..."
+              className="w-full rounded-full border border-white/15 bg-[#0a0420]/80 backdrop-blur-md pl-11 pr-4 py-2.5 text-sm text-white placeholder:text-white/30 outline-none focus:border-cyan-300/50 transition-colors shadow-[0_4px_16px_rgba(0,0,0,0.3)]"
+            />
+          </div>
+
           <CategoryFilter active={active} onChange={setActive} counts={counts} />
 
           <div className="flex flex-wrap items-center justify-center gap-3">
@@ -95,7 +138,7 @@ export function AppsSection() {
               className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs border transition-colors ${
                 showFavoritesOnly
                   ? "border-yellow-300/60 bg-yellow-300/10 text-yellow-200"
-                  : "border-white/10 bg-white/[0.02] text-white/60 hover:text-white"
+                  : "border-white/20 bg-[#0a0420]/85 backdrop-blur-md shadow-[0_4px_16px_rgba(0,0,0,0.4)] text-white/80 hover:text-white"
               }`}
             >
               <svg
