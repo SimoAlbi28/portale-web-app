@@ -104,6 +104,10 @@ export function HackingGame() {
     "idle" | "checking" | "verifying" | "success" | "failing"
   >("idle");
   const [attempts, setAttempts] = useState(0);
+  const tilesRef = useRef<Tile[]>([]);
+
+  // Keep tilesRef in sync so timeouts can read the latest committed tiles
+  tilesRef.current = tiles;
 
   // Hydrate
   useEffect(() => {
@@ -134,23 +138,29 @@ export function HackingGame() {
 
   const placeInNextSlot = (tileId: number) => {
     if (status !== "idle") return;
-    setTiles((prev) => {
-      const tile = prev.find((t) => t.id === tileId);
-      if (!tile || tile.placedSlot !== null || tile.locked) return prev;
-      // Find next free slot (no tile has that placedSlot, and not locked)
-      const placedSlots = new Set(
-        prev.filter((t) => t.placedSlot !== null).map((t) => t.placedSlot)
-      );
-      let target = -1;
-      for (let i = 0; i < word.length; i++) {
-        if (!placedSlots.has(i)) {
-          target = i;
-          break;
-        }
+    const tile = tiles.find((t) => t.id === tileId);
+    if (!tile || tile.placedSlot !== null || tile.locked) return;
+    // Find next free slot
+    const placedSlots = new Set(
+      tiles.filter((t) => t.placedSlot !== null).map((t) => t.placedSlot)
+    );
+    let target = -1;
+    for (let i = 0; i < word.length; i++) {
+      if (!placedSlots.has(i)) {
+        target = i;
+        break;
       }
-      if (target === -1) return prev;
-      return prev.map((t) => (t.id === tileId ? { ...t, placedSlot: target } : t));
-    });
+    }
+    if (target === -1) return;
+    // Place the tile
+    setTiles((prev) =>
+      prev.map((t) => (t.id === tileId ? { ...t, placedSlot: target } : t))
+    );
+    // If this placement fills the last slot, start checking
+    if (placedSlots.size + 1 === word.length) {
+      setStatus("checking");
+      setAttempts((a) => a + 1);
+    }
   };
 
   const removeFromSlot = (tileId: number) => {
@@ -162,20 +172,15 @@ export function HackingGame() {
     );
   };
 
-  // Detect when all slots are filled → transition to "checking"
-  useEffect(() => {
-    if (!word || status !== "idle") return;
-    const placed = tiles.filter((t) => t.placedSlot !== null).length;
-    if (placed !== word.length) return;
-    setStatus("checking");
-    setAttempts((a) => a + 1);
-  }, [tiles, word, status]);
-
   const maxAttempts = word.length || 1;
 
   // Run the "checking" phase (1→2→3 flash, then decide)
   useEffect(() => {
     if (status !== "checking") return;
+
+    // attempts is already incremented in the click handler (batched with setStatus)
+    const currentAttempt = attempts;
+
     let cancelled = false;
     const timeouts: ReturnType<typeof setTimeout>[] = [];
     const schedule = (fn: () => void, delay: number) => {
@@ -217,16 +222,13 @@ export function HackingGame() {
 
     // Phase 3: clear shake + decide next status
     schedule(() => {
-      let allLocked = false;
-      setTiles((prev) => {
-        allLocked = prev.every((t) => t.locked);
-        return prev.map((t) => ({ ...t, shake: false }));
-      });
+      // Read latest tiles from ref (updated after Phase 1/2 renders)
+      const allLocked = tilesRef.current.every((t) => t.locked);
+      setTiles((prev) => prev.map((t) => ({ ...t, shake: false })));
 
       if (allLocked) {
         setStatus("verifying");
-      } else if (attempts >= maxAttempts) {
-        // Out of attempts → reveal the solution and move on without completing
+      } else if (currentAttempt >= maxAttempts) {
         setStatus("failing");
       } else {
         setStatus("idle");
@@ -237,7 +239,8 @@ export function HackingGame() {
       cancelled = true;
       timeouts.forEach((id) => clearTimeout(id));
     };
-  }, [status, word, attempts, maxAttempts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, word, maxAttempts]);
 
   // Run the "failing" phase: show HACKING FAILED, then retry same level
   useEffect(() => {
@@ -264,18 +267,16 @@ export function HackingGame() {
     };
   }, [status, word]);
 
-  // Run the "verifying → success → next level" sequence
+  // Step 1: verifying → success (after overlay display)
   useEffect(() => {
     if (status !== "verifying") return;
-    let cancelled = false;
-    const timeouts: ReturnType<typeof setTimeout>[] = [];
-    const schedule = (fn: () => void, delay: number) => {
-      const id = setTimeout(() => {
-        if (!cancelled) fn();
-      }, delay);
-      timeouts.push(id);
-    };
+    const id = setTimeout(() => setStatus("success"), 1200);
+    return () => clearTimeout(id);
+  }, [status]);
 
+  // Step 2: success → advance to next level
+  useEffect(() => {
+    if (status !== "success") return;
     const newCompleted = Array.from(
       new Set([...state.completed, state.level])
     );
@@ -283,8 +284,7 @@ export function HackingGame() {
     const isFinalWin =
       state.level === TOTAL_LEVELS && newCompleted.length === TOTAL_LEVELS;
 
-    schedule(() => setStatus("success"), 2600);
-    schedule(() => {
+    const id = setTimeout(() => {
       setState({ level: nextLevel, completed: newCompleted });
       if (isFinalWin) {
         setStatus("idle");
@@ -294,12 +294,8 @@ export function HackingGame() {
       } else {
         setStatus("idle");
       }
-    }, 3400);
-
-    return () => {
-      cancelled = true;
-      timeouts.forEach((id) => clearTimeout(id));
-    };
+    }, 600);
+    return () => clearTimeout(id);
   }, [status, state.level, state.completed, startNewLevel]);
 
   const reset = () => {

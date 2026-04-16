@@ -97,7 +97,7 @@ docs/superpowers/specs/
 ### 6.1 Registry tipizzato — `lib/apps.ts`
 
 ```ts
-export type AppCategory = 'lavoro' | 'produttivita' | 'salute' | 'utility';
+export type AppCategory = 'lavoro' | 'à' | 'salute' | 'utility';
 
 export type AppMeta = {
   slug: string;
@@ -140,11 +140,11 @@ Il body MDX è contenuto libero (markdown con componenti React inline).
 | `farmaci` | Farmaci | Gestisci farmaci e scadenze | salute | https://farmaci-eta.vercel.app/ |
 | `green-village` | Green Village | Manutenzioni del Green Village con QR | lavoro | https://green-village-app.vercel.app/ |
 | `manutenzioni` | Manutenzioni | Tracciamento manutenzioni macchinari | lavoro | https://progetto-finale-qrcode.vercel.app/ |
-| `rate` | Rate & Pagamenti | Gestione rate e pagamenti | produttivita | https://rate-payments.vercel.app/ |
+| `rate` | Rate & Pagamenti | Gestione rate e pagamenti | à | https://rate-payments.vercel.app/ |
 | `ricette` | Ricette | Le tue ricette offline | utility | https://simoalbi28.github.io/ricette-app/index.html |
-| `school-diary` | Diario Scolastico | Il tuo diario scolastico digitale | produttivita | https://school-diary-nu.vercel.app/ |
+| `school-diary` | Diario Scolastico | Il tuo diario scolastico digitale | à | https://school-diary-nu.vercel.app/ |
 | `timbrature` | Timbrature | Timbrature offline | lavoro | https://simoalbi28.github.io/TIMBRATURE-APP/index.html |
-| `todo-list` | To-Do List | Todo con notifiche | produttivita | https://simoalbi28.github.io/TODO-LIST-APP/ (da confermare) |
+| `todo-list` | To-Do List | Todo con notifiche | à | https://simoalbi28.github.io/TODO-LIST-APP/ (da confermare) |
 
 Le icone sono già presenti nei progetti sorgente e verranno copiate in `public/apps/<slug>/icon.png` durante l'implementazione. Gli screenshot mancanti saranno placeholder stilizzati finché l'autore non ne fornirà di reali.
 
