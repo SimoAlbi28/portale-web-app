@@ -89,7 +89,7 @@ export function Navbar() {
           </button>
 
           {/* Desktop nav items */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
             {NAV_ITEMS.map((item) => {
               const isActive = activeSection === item.href;
               return (
