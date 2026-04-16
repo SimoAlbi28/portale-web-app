@@ -119,6 +119,7 @@ export function BootSequence() {
 
   return (
     <div
+      id="boot-overlay"
       ref={ref}
       className="fixed inset-0 z-[200] bg-[#020014] flex items-center justify-center font-mono text-xs md:text-sm cursor-pointer overflow-hidden"
     >

@@ -115,7 +115,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     import("@/lib/supabase/sync").then(({ loadUserData }) =>
       loadUserData().then((data) => {
         if (data?.settings) {
-          setState((s) => ({ ...s, ...data.settings }));
+          setState((s) => ({ ...s, ...data.settings } as Settings));
         }
       })
     ).catch(() => { /* ignore */ });

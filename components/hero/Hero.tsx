@@ -43,7 +43,7 @@ export function Hero() {
       </div>
 
       {/* Middle: game */}
-      <div id="game" className="relative w-full mt-6 md:mt-8 flex-1 flex flex-col items-center">
+      <div id="game" className="relative w-full mt-12 md:mt-16 flex-1 flex flex-col items-center">
         <div className="text-center mb-4">
           <span className="text-xs uppercase tracking-[0.3em] text-cyan-300 font-mono">
             // Mini Game

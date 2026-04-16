@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* Hide boot sequence on mobile — instant, no JS needed */
+@media (max-width: 767px), (hover: none) and (pointer: coarse) {
+  #boot-overlay {
+    display: none !important;
+  }
+}
+
 /* Boot sequence — pure CSS animations, no JS timers */
 @keyframes boot-line-in {
   from {
