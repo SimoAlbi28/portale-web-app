@@ -11,7 +11,6 @@ import type { User } from "@supabase/supabase-js";
 
 const NAV_ITEMS = [
   { label: "Hacker Game", href: "#game" },
-  { label: "About", href: "#about" },
   { label: "App", href: "#apps" },
   { label: "Contatti", href: "#contatti" },
 ];
