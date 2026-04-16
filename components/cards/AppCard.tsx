@@ -130,7 +130,7 @@ export function AppCard({ app, index = 0 }: Props) {
           e.stopPropagation();
           toggleFavorite(app.slug);
         }}
-        className={`absolute top-3 right-3 z-30 size-9 rounded-full flex items-center justify-center transition-colors ${
+        className={`absolute top-3 right-3 z-30 size-11 md:size-9 rounded-full flex items-center justify-center transition-colors ${
           isFav
             ? "bg-yellow-300/20 text-yellow-300 border border-yellow-300/40"
             : "bg-black/60 text-white/70 border border-white/20 hover:text-yellow-200 hover:bg-white/10 hover:border-yellow-300/40"

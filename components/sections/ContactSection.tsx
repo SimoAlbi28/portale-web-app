@@ -59,7 +59,9 @@ export function ContactSection() {
   };
 
   return (
-    <section id="contatti" className="relative mx-auto w-full max-w-7xl px-6 md:px-10 py-12 md:py-16">
+    <section id="contatti" className="relative w-full py-12 md:py-16">
+      <div className="absolute inset-0 bg-[#07021c]/80 backdrop-blur-sm" />
+      <div className="relative mx-auto max-w-7xl px-6 md:px-10">
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -100,7 +102,7 @@ export function ContactSection() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[11px] uppercase tracking-widest text-white/40 mb-1.5 ml-1">
+                <label className="block text-[11px] uppercase tracking-widest text-white/60 mb-1.5 ml-1">
                   Nome
                 </label>
                 <input
@@ -109,11 +111,11 @@ export function ContactSection() {
                   onChange={(e) => setName(e.target.value)}
                   required
                   placeholder="Il tuo nome"
-                  className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white placeholder:text-white/25 outline-none focus:border-cyan-300/50 transition-colors"
+                  className="w-full rounded-xl border border-white/20 bg-white/[0.06] px-4 py-3 text-sm text-white placeholder:text-white/25 outline-none focus:border-cyan-300/50 transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-[11px] uppercase tracking-widest text-white/40 mb-1.5 ml-1">
+                <label className="block text-[11px] uppercase tracking-widest text-white/60 mb-1.5 ml-1">
                   Email
                 </label>
                 <input
@@ -122,13 +124,13 @@ export function ContactSection() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder="la@tua.email"
-                  className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white placeholder:text-white/25 outline-none focus:border-cyan-300/50 transition-colors"
+                  className="w-full rounded-xl border border-white/20 bg-white/[0.06] px-4 py-3 text-sm text-white placeholder:text-white/25 outline-none focus:border-cyan-300/50 transition-colors"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-[11px] uppercase tracking-widest text-white/40 mb-1.5 ml-1">
+              <label className="block text-[11px] uppercase tracking-widest text-white/60 mb-1.5 ml-1">
                 Oggetto
               </label>
               <input
@@ -137,12 +139,12 @@ export function ContactSection() {
                 onChange={(e) => setSubject(e.target.value)}
                 required
                 placeholder="Di cosa si tratta?"
-                className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white placeholder:text-white/25 outline-none focus:border-cyan-300/50 transition-colors"
+                className="w-full rounded-xl border border-white/20 bg-white/[0.06] px-4 py-3 text-sm text-white placeholder:text-white/25 outline-none focus:border-cyan-300/50 transition-colors"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] uppercase tracking-widest text-white/40 mb-1.5 ml-1">
+              <label className="block text-[11px] uppercase tracking-widest text-white/60 mb-1.5 ml-1">
                 Messaggio
               </label>
               <textarea
@@ -151,7 +153,7 @@ export function ContactSection() {
                 required
                 rows={5}
                 placeholder="Scrivi il tuo messaggio..."
-                className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white placeholder:text-white/25 outline-none focus:border-cyan-300/50 transition-colors resize-none"
+                className="w-full rounded-xl border border-white/20 bg-white/[0.06] px-4 py-3 text-sm text-white placeholder:text-white/25 outline-none focus:border-cyan-300/50 transition-colors resize-none"
               />
             </div>
 
@@ -173,6 +175,7 @@ export function ContactSection() {
             </button>
           </form>
         )}
+      </div>
       </div>
     </section>
   );

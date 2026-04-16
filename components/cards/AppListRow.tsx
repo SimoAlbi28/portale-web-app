@@ -88,10 +88,10 @@ export function AppListRow({ app, index = 0 }: { app: AppMeta; index?: number })
         aria-label={isFav ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
         aria-pressed={isFav}
         onClick={() => toggleFavorite(app.slug)}
-        className={`absolute top-1/2 -translate-y-1/2 right-[100%] mr-2 size-8 rounded-full hidden md:flex items-center justify-center transition-colors ${
+        className={`absolute top-1/2 -translate-y-1/2 right-2 md:right-[100%] md:mr-2 size-10 md:size-8 rounded-full flex items-center justify-center transition-colors z-10 ${
           isFav
             ? "text-yellow-300 bg-yellow-300/15"
-            : "text-white/60 bg-black/40 border border-white/15 hover:text-yellow-200 hover:border-yellow-300/40"
+            : "text-white/60 bg-black/60 border border-white/15 hover:text-yellow-200 hover:border-yellow-300/40"
         }`}
       >
         <svg

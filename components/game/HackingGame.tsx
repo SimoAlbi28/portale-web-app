@@ -429,7 +429,7 @@ export function HackingGame() {
                     ? { duration: 0.45, ease: "easeOut" }
                     : { type: "spring", stiffness: 350, damping: 24 }
                 }
-                className="size-9 md:size-10 rounded-md border border-emerald-500/50 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20 hover:border-emerald-400 transition-colors flex items-center justify-center text-sm md:text-base font-bold uppercase shadow-[0_0_10px_rgba(16,185,129,0.25)]"
+                className="size-11 md:size-10 rounded-md border border-emerald-500/50 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20 hover:border-emerald-400 transition-colors flex items-center justify-center text-base md:text-base font-bold uppercase shadow-[0_0_10px_rgba(16,185,129,0.25)]"
               >
                 {tile.letter}
               </motion.button>
@@ -463,7 +463,7 @@ export function HackingGame() {
                     : {}
                 }
                 transition={{ duration: 0.45 }}
-                className={`size-10 md:size-12 rounded-md border-2 flex items-center justify-center text-base md:text-lg font-bold uppercase transition-colors ${
+                className={`size-11 md:size-12 rounded-md border-2 flex items-center justify-center text-base md:text-lg font-bold uppercase transition-colors ${
                   isWrong
                     ? "border-red-500 bg-red-500/20 text-red-200 shadow-[0_0_18px_rgba(239,68,68,0.7)]"
                     : isRevealed
@@ -556,7 +556,7 @@ export function HackingGame() {
                   ✕
                 </button>
               </div>
-              <div className="grid grid-cols-10 gap-1.5 md:gap-2">
+              <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5 md:gap-2">
                 {Array.from({ length: TOTAL_LEVELS }, (_, i) => i + 1).map(
                   (lv) => {
                     const done = state.completed.includes(lv);

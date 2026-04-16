@@ -128,7 +128,7 @@ export function AppsSection() {
 
           <CategoryFilter active={active} onChange={setActive} counts={counts} />
 
-          <div className="flex flex-wrap items-center justify-center gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
             {/* Favorites toggle */}
             <button
               type="button"

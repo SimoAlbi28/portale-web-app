@@ -70,17 +70,19 @@ export function Navbar() {
   return (
     <>
       <nav
-        className="fixed top-0 left-0 right-0 z-[100] bg-[#07021c]/90 backdrop-blur-xl border-b border-white/[0.08] shadow-[0_4px_30px_rgba(0,0,0,0.5),0_0_40px_rgba(34,211,238,0.03)]"
+        className="fixed top-0 left-0 right-0 z-[100] bg-[#07021c]/90 backdrop-blur-xl shadow-[0_4px_30px_rgba(0,0,0,0.5)]"
       >
+        {/* Animated gradient border */}
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent nav-glow-line" />
         <div className="mx-auto max-w-7xl flex items-center justify-between h-16 px-6 md:px-10">
           {/* Logo */}
           <button
             type="button"
             data-cursor="hover"
-            onClick={() => scrollTo("#")}
-            className="flex items-center gap-2.5 group"
+            onClick={() => scrollTo("#home")}
+            className="flex items-center gap-2.5 group shrink-0"
           >
-            <span className="size-2 rounded-full bg-cyan-300 shadow-[0_0_12px_theme(colors.cyan.300)] group-hover:shadow-[0_0_20px_theme(colors.cyan.300)] transition-shadow" />
+            <span className="size-2 rounded-full bg-cyan-300 shadow-[0_0_12px_theme(colors.cyan.300)] group-hover:shadow-[0_0_20px_theme(colors.cyan.300)] transition-shadow animate-pulse" />
             <span className="font-mono text-sm uppercase tracking-[0.25em] text-white/90 group-hover:text-white transition-colors">
               Daily_Apps
             </span>
@@ -114,7 +116,7 @@ export function Navbar() {
           </div>
 
           {/* Right side */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             {/* Auth button / User menu (desktop) */}
             <div className="hidden md:block">
               {user ? (

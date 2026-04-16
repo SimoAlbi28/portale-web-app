@@ -7,6 +7,7 @@
   }
 }
 
+
 /* Boot sequence — pure CSS animations, no JS timers */
 @keyframes boot-line-in {
   from {

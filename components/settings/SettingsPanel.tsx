@@ -70,7 +70,7 @@ export function SettingsPanel({ inline = false }: { inline?: boolean }) {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
                 transition={{ type: "spring", stiffness: 300, damping: 28 }}
-                className="fixed top-20 right-6 z-[150] w-[min(340px,calc(100vw-3rem))] rounded-2xl border border-white/10 bg-[#07021c]/95 backdrop-blur-xl shadow-[0_0_60px_rgba(168,85,247,0.3)] p-5"
+                className="fixed top-20 right-3 md:right-6 z-[150] w-[min(340px,calc(100vw-1.5rem))] rounded-2xl border border-white/10 bg-[#07021c]/95 backdrop-blur-xl shadow-[0_0_60px_rgba(168,85,247,0.3)] p-4 md:p-5 max-h-[calc(100vh-6rem)] overflow-y-auto"
             >
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-sm uppercase tracking-[0.3em] font-mono text-cyan-300">
