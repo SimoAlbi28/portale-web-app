@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { lengthForLevel, pickWordForLevel } from "@/lib/hacking-words";
 
@@ -132,6 +133,19 @@ export function HackingGame() {
       })
     ).catch(() => { /* ignore */ });
   }, []);
+
+  // Lock body scroll and pause Lenis smooth-scroll while a modal is open
+  useEffect(() => {
+    if (!showLevels && !showCertificate) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const lenis = window.__lenis__;
+    lenis?.stop();
+    return () => {
+      document.body.style.overflow = prev;
+      lenis?.start();
+    };
+  }, [showLevels, showCertificate]);
 
   // Persist to localStorage + Supabase
   useEffect(() => {
@@ -332,13 +346,6 @@ export function HackingGame() {
     return () => clearTimeout(id);
   }, [status, state.level, state.completed, startNewLevel]);
 
-  const reset = () => {
-    if (!word) return;
-    setTiles(buildTiles(word));
-    setStatus("idle");
-    setAttempts(0);
-  };
-
   const slots = useMemo(() => {
     const arr: (Tile | null)[] = Array(word.length).fill(null);
     tiles.forEach((t) => {
@@ -398,12 +405,12 @@ export function HackingGame() {
             className={`ml-2 ${
               attempts >= maxAttempts
                 ? "text-red-400"
-                : attempts >= maxAttempts - 1
+                : attempts + 1 === maxAttempts
                 ? "text-yellow-300"
                 : "opacity-50"
             }`}
           >
-            // {attempts}/{maxAttempts} tentativi
+            // {Math.min(attempts + 1, maxAttempts)}/{maxAttempts} tentativi
           </span>
         </div>
 
@@ -494,15 +501,7 @@ export function HackingGame() {
         </AnimatePresence>
 
         {/* Bottom bar */}
-        <div className="mt-6 flex items-center justify-between text-[11px] text-emerald-300/60">
-          <button
-            type="button"
-            data-cursor="hover"
-            onClick={reset}
-            className="uppercase tracking-widest hover:text-emerald-200 transition-colors"
-          >
-            ⟲ Reset
-          </button>
+        <div className="mt-6 flex items-center justify-center text-[11px] text-emerald-300/60">
           <div
             className={`animate-pulse ${
               status === "failing"
@@ -525,24 +524,26 @@ export function HackingGame() {
         </div>
       </motion.div>
 
-      {/* Levels modal */}
-      <AnimatePresence>
-        {showLevels && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowLevels(false)}
-            className="fixed inset-0 z-[160] bg-black/70 backdrop-blur-md flex items-center justify-center p-4"
-          >
+      {/* Levels modal — portaled to body so it sits above the navbar */}
+      {typeof document !== "undefined" && createPortal(
+        <AnimatePresence>
+          {showLevels && (
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-2xl rounded-2xl border border-emerald-500/40 bg-black/95 backdrop-blur-xl p-6 font-mono shadow-[0_0_60px_rgba(16,185,129,0.25)]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowLevels(false)}
+              className="fixed inset-0 z-[200] bg-black/70 backdrop-blur-md flex items-center justify-center p-4"
             >
-              <div className="flex items-center justify-between mb-5">
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                data-lenis-prevent
+                className="w-full max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto overscroll-contain rounded-2xl border border-emerald-500/40 bg-black/95 backdrop-blur-xl font-mono shadow-[0_0_60px_rgba(16,185,129,0.25)]"
+              >
+              <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-black/95 backdrop-blur-xl border-b border-emerald-500/20">
                 <h3 className="text-sm uppercase tracking-[0.3em] text-emerald-300">
                   // levels {completedCount}/{TOTAL_LEVELS}
                 </h3>
@@ -550,12 +551,13 @@ export function HackingGame() {
                   type="button"
                   data-cursor="hover"
                   onClick={() => setShowLevels(false)}
-                  className="text-emerald-300/60 hover:text-emerald-200"
+                  className="flex items-center justify-center size-8 rounded-full border border-emerald-500/30 text-emerald-300/70 hover:text-emerald-200 hover:border-emerald-300/60 transition-colors"
                   aria-label="Chiudi"
                 >
                   ✕
                 </button>
               </div>
+              <div className="p-6">
               <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5 md:gap-2">
                 {Array.from({ length: TOTAL_LEVELS }, (_, i) => i + 1).map(
                   (lv) => {
@@ -651,10 +653,27 @@ export function HackingGame() {
                   Bloccato
                 </span>
               </div>
+              </div>
+              <div className="sticky bottom-0 flex justify-center px-6 py-4 bg-black/95 backdrop-blur-xl border-t border-emerald-500/20">
+                <button
+                  type="button"
+                  data-cursor="hover"
+                  onClick={() => setShowLevels(false)}
+                  className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-5 py-2 text-xs uppercase tracking-widest text-emerald-200 hover:bg-emerald-500/20 hover:border-emerald-300/60 transition-colors"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M19 12H5" />
+                    <path d="m12 19-7-7 7-7" />
+                  </svg>
+                  Indietro
+                </button>
+              </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* Certificate modal — unlocked when all 100 levels are completed */}
       <AnimatePresence>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { createSupabaseClient } from "@/lib/supabase/client";
+import { apps } from "@/lib/apps";
 import type { User } from "@supabase/supabase-js";
 
 export function ContactSection() {
@@ -25,6 +26,34 @@ export function ContactSection() {
         setName(u.user_metadata?.full_name ?? u.email?.split("@")[0] ?? "");
       }
     });
+  }, []);
+
+  // Pre-fill from URL: ?contact=demo|preventivo&app=slug
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const type = params.get("contact");
+    const slug = params.get("app");
+    if (!type && !slug) return;
+    const app = slug ? apps.find((a) => a.slug === slug) : undefined;
+    const appName = app?.name ?? "";
+    if (type === "demo") {
+      setSubject(appName ? `Richiesta demo — ${appName}` : "Richiesta demo");
+      setBody(
+        appName
+          ? `Ciao, vorrei vedere una demo di ${appName}. Sono interessato a capire se può adattarsi al mio caso d'uso.`
+          : "Ciao, vorrei vedere una demo di una delle tue app."
+      );
+    } else if (type === "preventivo") {
+      setSubject(
+        appName ? `Richiesta preventivo — ${appName}` : "Richiesta preventivo"
+      );
+      setBody(
+        appName
+          ? `Ciao, vorrei ricevere un preventivo per ${appName}.\n\nPersonalizzazioni richieste:\n- \n\nTempistiche ideali:\n- `
+          : "Ciao, vorrei ricevere un preventivo per una delle tue app."
+      );
+    }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {

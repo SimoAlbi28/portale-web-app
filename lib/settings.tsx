@@ -13,6 +13,7 @@ export type Theme = "cyberpunk" | "synthwave" | "matrix" | "minimal";
 export type Intensity = "full" | "light" | "off";
 export type View = "grid" | "list";
 export type Sort = "category" | "alpha" | "random";
+export type CursorStyle = "default" | "ring" | "dot" | "cross";
 
 type Settings = {
   theme: Theme;
@@ -21,6 +22,8 @@ type Settings = {
   sort: Sort;
   favorites: string[];
   showFavoritesOnly: boolean;
+  cursorStyle: CursorStyle;
+  cursorColor: string;
 };
 
 type SettingsCtx = Settings & {
@@ -30,7 +33,19 @@ type SettingsCtx = Settings & {
   setSort: (s: Sort) => void;
   toggleFavorite: (slug: string) => void;
   setShowFavoritesOnly: (v: boolean) => void;
+  setCursorStyle: (c: CursorStyle) => void;
+  setCursorColor: (c: string) => void;
 };
+
+export const CURSOR_COLORS: { id: string; hex: string; label: string }[] = [
+  { id: "cyan", hex: "#22d3ee", label: "Cyan" },
+  { id: "magenta", hex: "#ec4899", label: "Magenta" },
+  { id: "violet", hex: "#a855f7", label: "Violet" },
+  { id: "emerald", hex: "#22c55e", label: "Emerald" },
+  { id: "amber", hex: "#f59e0b", label: "Amber" },
+  { id: "rose", hex: "#f43f5e", label: "Rose" },
+  { id: "white", hex: "#ffffff", label: "White" },
+];
 
 const DEFAULTS: Settings = {
   theme: "cyberpunk",
@@ -39,6 +54,8 @@ const DEFAULTS: Settings = {
   sort: "category",
   favorites: [],
   showFavoritesOnly: false,
+  cursorStyle: "ring",
+  cursorColor: "#22d3ee",
 };
 
 const STORAGE_KEY = "daily-apps-settings";
@@ -85,13 +102,13 @@ export const THEMES: Record<
     webgl: { a: "#00ff9d", b: "#0dff6b", c: "#22ff88" },
   },
   minimal: {
-    label: "Minimal",
-    bg: "#0a0a0a",
-    fg: "#fafafa",
-    accentA: "#ffffff",
-    accentB: "#bbbbbb",
-    accentC: "#888888",
-    webgl: { a: "#ffffff", b: "#888888", c: "#444444" },
+    label: "Abyss",
+    bg: "#030818",
+    fg: "#e6f5ff",
+    accentA: "#0a1f4d",
+    accentB: "#1e40af",
+    accentC: "#22d3ee",
+    webgl: { a: "#0a1f4d", b: "#1e40af", c: "#22d3ee" },
   },
 };
 
@@ -144,14 +161,12 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     root.style.setProperty("--accent-violet", t.accentC);
     root.setAttribute("data-theme", state.theme);
     root.setAttribute("data-intensity", state.intensity);
-    if (state.intensity === "off" || state.theme === "minimal") {
-      document.body.classList.remove("has-custom-cursor");
-    } else if (state.intensity === "full") {
+    if (state.intensity !== "off") {
       document.body.classList.add("has-custom-cursor");
     } else {
       document.body.classList.remove("has-custom-cursor");
     }
-  }, [state.theme, state.intensity]);
+  }, [state.theme, state.intensity, state.cursorStyle]);
 
   const setTheme = useCallback(
     (theme: Theme) => setState((s) => ({ ...s, theme })),
@@ -185,6 +200,14 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       setState((s) => ({ ...s, showFavoritesOnly })),
     []
   );
+  const setCursorStyle = useCallback(
+    (cursorStyle: CursorStyle) => setState((s) => ({ ...s, cursorStyle })),
+    []
+  );
+  const setCursorColor = useCallback(
+    (cursorColor: string) => setState((s) => ({ ...s, cursorColor })),
+    []
+  );
 
   const value = useMemo<SettingsCtx>(
     () => ({
@@ -195,6 +218,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       setSort,
       toggleFavorite,
       setShowFavoritesOnly,
+      setCursorStyle,
+      setCursorColor,
     }),
     [
       state,
@@ -204,6 +229,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       setSort,
       toggleFavorite,
       setShowFavoritesOnly,
+      setCursorStyle,
+      setCursorColor,
     ]
   );
 
@@ -222,6 +249,8 @@ export function useSettings(): SettingsCtx {
       setSort: () => {},
       toggleFavorite: () => {},
       setShowFavoritesOnly: () => {},
+      setCursorStyle: () => {},
+      setCursorColor: () => {},
     };
   }
   return ctx;

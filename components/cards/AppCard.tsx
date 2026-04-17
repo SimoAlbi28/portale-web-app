@@ -53,27 +53,12 @@ function CardContent({ app }: { app: AppMeta }) {
         ))}
       </div>
 
-      <div className="relative mt-6 flex items-center justify-between text-xs">
+      <div className="relative mt-6 flex items-center text-xs">
         <span
           className="uppercase tracking-[0.2em] font-mono"
           style={{ color: app.accentColor }}
         >
           {app.category}
-        </span>
-        <span
-          className="inline-flex items-center gap-1"
-          style={{ color: app.accentColor }}
-        >
-          Esplora
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M5 12h14m-5-5 5 5-5 5"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
         </span>
       </div>
     </>
@@ -130,7 +115,7 @@ export function AppCard({ app, index = 0 }: Props) {
           e.stopPropagation();
           toggleFavorite(app.slug);
         }}
-        className={`absolute top-3 right-3 z-30 size-11 md:size-9 rounded-full flex items-center justify-center transition-colors ${
+        className={`absolute bottom-3 right-3 z-30 size-8 md:size-7 rounded-full flex items-center justify-center transition-colors ${
           isFav
             ? "bg-yellow-300/20 text-yellow-300 border border-yellow-300/40"
             : "bg-black/60 text-white/70 border border-white/20 hover:text-yellow-200 hover:bg-white/10 hover:border-yellow-300/40"
@@ -142,8 +127,8 @@ export function AppCard({ app, index = 0 }: Props) {
         }
       >
         <svg
-          width="18"
-          height="18"
+          width="14"
+          height="14"
           viewBox="0 0 24 24"
           fill={isFav ? "currentColor" : "none"}
           stroke="currentColor"

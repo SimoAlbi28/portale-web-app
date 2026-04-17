@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { LogOut, Mail } from "lucide-react";
 import { signOut } from "@/lib/supabase/auth";
 import type { User } from "@supabase/supabase-js";
 
@@ -52,7 +53,8 @@ export function UserMenu({ user }: { user: User }) {
             transition={{ duration: 0.15 }}
             className="absolute right-0 top-12 z-50 w-56 rounded-xl border border-white/10 bg-[#07021c]/95 backdrop-blur-xl shadow-[0_0_40px_rgba(0,0,0,0.5)] p-2"
           >
-            <div className="px-3 py-2 border-b border-white/10 mb-1">
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-white/10 mb-1">
+              <Mail size={14} className="shrink-0 text-white/50" aria-hidden />
               <p className="text-xs text-white/50 truncate">
                 {user.email}
               </p>
@@ -61,8 +63,9 @@ export function UserMenu({ user }: { user: User }) {
               type="button"
               data-cursor="hover"
               onClick={handleSignOut}
-              className="w-full text-left rounded-lg px-3 py-2.5 text-sm text-red-400 hover:bg-white/5 transition-colors"
+              className="w-full flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm text-red-400 hover:bg-white/5 transition-colors"
             >
+              <LogOut size={16} aria-hidden />
               Esci
             </button>
           </motion.div>

@@ -1,79 +1,54 @@
 "use client";
 
+import { useEffect, useRef, type RefObject } from "react";
 import { motion } from "framer-motion";
-import { signOut } from "@/lib/supabase/auth";
-import type { User } from "@supabase/supabase-js";
 
 type NavItem = { label: string; href: string };
 
 export function MobileMenu({
   items,
-  user,
   onNavigate,
-  onAuth,
   onClose,
+  triggerRef,
 }: {
   items: NavItem[];
-  user: User | null;
   onNavigate: (href: string) => void;
-  onAuth: () => void;
   onClose: () => void;
+  triggerRef?: RefObject<HTMLButtonElement | null>;
 }) {
-  const handleSignOut = async () => {
-    await signOut();
-    onClose();
-    window.location.reload();
-  };
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (ref.current?.contains(target)) return;
+      if (triggerRef?.current?.contains(target)) return;
+      onClose();
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [onClose, triggerRef]);
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      className="fixed inset-0 z-[90] bg-[#030014]/95 backdrop-blur-xl flex flex-col items-center justify-center gap-6 md:hidden"
+      ref={ref}
+      initial={{ opacity: 0, y: -8, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -8, scale: 0.97 }}
+      transition={{ duration: 0.18 }}
+      className="fixed top-[4.25rem] left-6 z-[95] md:hidden w-48 rounded-xl border border-white/10 bg-[#07021c]/95 backdrop-blur-xl shadow-[0_0_40px_rgba(0,0,0,0.5)] p-2"
     >
-      {items.map((item, i) => (
-        <motion.button
+      {items.map((item) => (
+        <button
           key={item.href}
           type="button"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: i * 0.06, duration: 0.3 }}
+          data-cursor="hover"
           onClick={() => onNavigate(item.href)}
-          className="text-2xl font-medium text-white/80 hover:text-cyan-300 transition-colors tracking-wide"
+          className="w-full text-left rounded-lg px-3 py-2.5 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors"
         >
           {item.label}
-        </motion.button>
+        </button>
       ))}
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: items.length * 0.06, duration: 0.3 }}
-        className="mt-4"
-      >
-        {user ? (
-          <div className="flex flex-col items-center gap-3">
-            <p className="text-sm text-white/40">{user.email}</p>
-            <button
-              type="button"
-              onClick={handleSignOut}
-              className="rounded-full border border-red-400/40 px-6 py-2.5 text-sm text-red-400 hover:bg-red-400/10 transition-colors"
-            >
-              Esci
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={onAuth}
-            className="rounded-full border border-cyan-300/40 bg-cyan-300/[0.06] px-8 py-3 text-base text-cyan-300 hover:bg-cyan-300/15 transition-all shadow-[0_0_20px_rgba(34,211,238,0.15)]"
-          >
-            Accedi
-          </button>
-        )}
-      </motion.div>
     </motion.div>
   );
 }

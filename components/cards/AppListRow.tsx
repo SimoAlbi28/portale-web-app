@@ -66,21 +66,6 @@ export function AppListRow({ app, index = 0 }: { app: AppMeta; index?: number })
             </span>
           ))}
         </div>
-        <span
-          className="shrink-0 text-xs inline-flex items-center gap-1"
-          style={{ color: app.accentColor }}
-        >
-          Apri
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M5 12h14m-5-5 5 5-5 5"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </span>
       </Link>
       <button
         type="button"
@@ -88,15 +73,15 @@ export function AppListRow({ app, index = 0 }: { app: AppMeta; index?: number })
         aria-label={isFav ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
         aria-pressed={isFav}
         onClick={() => toggleFavorite(app.slug)}
-        className={`absolute top-1/2 -translate-y-1/2 right-2 md:right-[100%] md:mr-2 size-10 md:size-8 rounded-full flex items-center justify-center transition-colors z-10 ${
+        className={`absolute top-1/2 -translate-y-1/2 right-2 md:right-[100%] md:mr-2 size-8 md:size-7 rounded-full flex items-center justify-center transition-colors z-10 ${
           isFav
             ? "text-yellow-300 bg-yellow-300/15"
             : "text-white/60 bg-black/60 border border-white/15 hover:text-yellow-200 hover:border-yellow-300/40"
         }`}
       >
         <svg
-          width="16"
-          height="16"
+          width="14"
+          height="14"
           viewBox="0 0 24 24"
           fill={isFav ? "currentColor" : "none"}
           stroke="currentColor"

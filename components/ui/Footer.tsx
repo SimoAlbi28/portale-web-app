@@ -1,7 +1,7 @@
 export function Footer() {
   return (
     <footer className="relative mt-auto border-t border-white/5">
-      <div className="mx-auto w-full max-w-7xl px-6 md:px-10 py-10 md:py-14 flex flex-col md:flex-row gap-6 md:items-center md:justify-between">
+      <div className="mx-auto w-full max-w-7xl px-6 md:px-10 py-10 md:py-14 flex flex-col items-center gap-4 text-center">
         <div className="flex items-center gap-3">
           <div className="size-2 rounded-full bg-cyan-300 shadow-[0_0_12px_theme(colors.cyan.300)]" />
           <span className="font-mono text-xs uppercase tracking-[0.3em] text-white/50">

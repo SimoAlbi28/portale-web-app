@@ -155,7 +155,7 @@ function Grid() {
 
 export function WebGLScene() {
   const [reducedMotion, setReducedMotion] = useState(false);
-  const { intensity, theme } = useSettings();
+  const { intensity } = useSettings();
 
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -165,8 +165,7 @@ export function WebGLScene() {
     return () => reduced.removeEventListener?.("change", update);
   }, []);
 
-  const enabled =
-    !reducedMotion && intensity !== "off" && theme !== "minimal";
+  const enabled = !reducedMotion && intensity !== "off";
 
   if (!enabled) {
     return (

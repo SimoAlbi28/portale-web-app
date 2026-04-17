@@ -10,7 +10,6 @@ import { useSettings, type Sort } from "@/lib/settings";
 
 export function AppsSection() {
   const [active, setActive] = useState<AppCategory | "all">("all");
-  const [search, setSearch] = useState("");
   const {
     favorites,
     showFavoritesOnly,
@@ -37,14 +36,6 @@ export function AppsSection() {
     let list =
       active === "all" ? apps : apps.filter((a) => a.category === active);
     if (showFavoritesOnly) list = list.filter((a) => favorites.includes(a.slug));
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (a) =>
-          a.name.toLowerCase().includes(q) ||
-          a.tagline.toLowerCase().includes(q)
-      );
-    }
     const sorted = [...list];
     if (sort === "alpha") {
       sorted.sort((a, b) => a.name.localeCompare(b.name));
@@ -58,7 +49,7 @@ export function AppsSection() {
       );
     }
     return sorted;
-  }, [active, showFavoritesOnly, favorites, sort, search]);
+  }, [active, showFavoritesOnly, favorites, sort]);
 
   const sortOptions: { id: Sort; label: string }[] = [
     { id: "category", label: "Categoria" },
@@ -86,8 +77,8 @@ export function AppsSection() {
             <span className="text-glow-cyan text-cyan-300">Web App</span>
           </h2>
           <p className="max-w-xl text-white text-base">
-            {apps.length} strumenti per la vita di tutti i giorni. Clicca una
-            card per scoprire di più.
+            Strumenti per la vita di tutti i giorni. Clicca una card per
+            scoprire di più.
           </p>
           <p className="max-w-xl text-white/80 text-base leading-relaxed">
             Ogni app è realizzata come esempio dimostrativo. L&apos;estetica e le
@@ -112,30 +103,14 @@ export function AppsSection() {
         </div>
 
         <div className="flex flex-col items-center gap-4 w-full">
-          {/* Search */}
-          <div className="relative w-full max-w-md">
-            <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
-            </svg>
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cerca un'app..."
-              className="w-full rounded-full border border-white/15 bg-[#0a0420]/80 backdrop-blur-md pl-11 pr-4 py-2.5 text-sm text-white placeholder:text-white/30 outline-none focus:border-cyan-300/50 transition-colors shadow-[0_4px_16px_rgba(0,0,0,0.3)]"
-            />
-          </div>
-
-          <CategoryFilter active={active} onChange={setActive} counts={counts} />
-
-          <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-2 md:gap-3">
-            {/* Favorites toggle */}
+          <CategoryFilter active={active} onChange={setActive} counts={counts}>
+            {/* Favorites toggle — rendered inline with category buttons */}
             <button
               type="button"
               data-cursor="hover"
               onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
               aria-pressed={showFavoritesOnly}
-              className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs border transition-colors ${
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium border transition-colors ${
                 showFavoritesOnly
                   ? "border-yellow-300/60 bg-yellow-300/10 text-yellow-200"
                   : "border-white/20 bg-[#0a0420]/85 backdrop-blur-md shadow-[0_4px_16px_rgba(0,0,0,0.4)] text-white/80 hover:text-white"
@@ -157,7 +132,9 @@ export function AppsSection() {
                 {favorites.length}
               </span>
             </button>
+          </CategoryFilter>
 
+          <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-2 md:gap-3">
             {/* Sort */}
             <div className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-[#0a0420]/85 backdrop-blur-md shadow-[0_4px_16px_rgba(0,0,0,0.4)] p-0.5 text-xs">
               <span className="px-2 text-white/40 uppercase tracking-widest text-[10px]">
@@ -185,27 +162,6 @@ export function AppsSection() {
               <button
                 type="button"
                 data-cursor="hover"
-                onClick={() => setView("grid")}
-                aria-label="Vista a griglia"
-                aria-pressed={view === "grid"}
-                className={`rounded-full px-2.5 py-1.5 transition-colors ${
-                  view === "grid"
-                    ? "bg-white/10 text-white"
-                    : "text-white/50 hover:text-white"
-                }`}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-              <button
-                type="button"
-                data-cursor="hover"
                 onClick={() => setView("list")}
                 aria-label="Vista a lista"
                 aria-pressed={view === "list"}
@@ -221,6 +177,27 @@ export function AppsSection() {
                     stroke="currentColor"
                     strokeWidth="2"
                     strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+              <button
+                type="button"
+                data-cursor="hover"
+                onClick={() => setView("grid")}
+                aria-label="Vista a griglia"
+                aria-pressed={view === "grid"}
+                className={`rounded-full px-2.5 py-1.5 transition-colors ${
+                  view === "grid"
+                    ? "bg-white/10 text-white"
+                    : "text-white/50 hover:text-white"
+                }`}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinejoin="round"
                   />
                 </svg>
               </button>

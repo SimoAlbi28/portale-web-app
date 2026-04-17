@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { AuthModal } from "./AuthModal";
@@ -20,6 +20,7 @@ export function Navbar() {
   const [authOpen, setAuthOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("#home");
+  const hamburgerRef = useRef<HTMLButtonElement>(null);
 
   // Listen to auth state
   useEffect(() => {
@@ -80,12 +81,48 @@ export function Navbar() {
         {/* Animated gradient border */}
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent nav-glow-line" />
         <div className="mx-auto max-w-7xl flex items-center justify-between h-16 px-6 md:px-10">
-          {/* Logo */}
+          {/* Hamburger (mobile, left) */}
+          <button
+            ref={hamburgerRef}
+            type="button"
+            data-cursor="hover"
+            onClick={() => setMobileOpen((o) => !o)}
+            aria-label="Menu"
+            className="md:hidden flex flex-col gap-1.5 items-center justify-center size-10 rounded-full border border-white/15 bg-black/40 shrink-0"
+          >
+            <motion.span
+              animate={mobileOpen ? { rotate: 45, y: 5 } : { rotate: 0, y: 0 }}
+              className="block w-5 h-px bg-white/80 origin-center"
+            />
+            <motion.span
+              animate={mobileOpen ? { opacity: 0 } : { opacity: 1 }}
+              className="block w-5 h-px bg-white/80"
+            />
+            <motion.span
+              animate={mobileOpen ? { rotate: -45, y: -5 } : { rotate: 0, y: 0 }}
+              className="block w-5 h-px bg-white/80 origin-center"
+            />
+          </button>
+
+          {/* Logo (desktop, left) */}
           <button
             type="button"
             data-cursor="hover"
             onClick={() => scrollTo("#home")}
-            className="flex items-center gap-2.5 group shrink-0"
+            className="hidden md:flex items-center gap-2.5 group shrink-0"
+          >
+            <span className="size-2 rounded-full bg-cyan-300 shadow-[0_0_12px_theme(colors.cyan.300)] group-hover:shadow-[0_0_20px_theme(colors.cyan.300)] transition-shadow animate-pulse" />
+            <span className="font-mono text-sm uppercase tracking-[0.25em] text-white/90 group-hover:text-white transition-colors">
+              Daily_Apps
+            </span>
+          </button>
+
+          {/* Logo (mobile, centered between hamburger and right actions) */}
+          <button
+            type="button"
+            data-cursor="hover"
+            onClick={() => scrollTo("#home")}
+            className="md:hidden flex items-center gap-2.5 group"
           >
             <span className="size-2 rounded-full bg-cyan-300 shadow-[0_0_12px_theme(colors.cyan.300)] group-hover:shadow-[0_0_20px_theme(colors.cyan.300)] transition-shadow animate-pulse" />
             <span className="font-mono text-sm uppercase tracking-[0.25em] text-white/90 group-hover:text-white transition-colors">
@@ -122,46 +159,37 @@ export function Navbar() {
 
           {/* Right side */}
           <div className="flex items-center gap-3 shrink-0">
-            {/* Auth button / User menu (desktop) */}
-            <div className="hidden md:block">
-              {user ? (
-                <UserMenu user={user} />
-              ) : (
+            {user ? (
+              <UserMenu user={user} />
+            ) : (
+              <>
+                {/* Desktop: text button */}
                 <button
                   type="button"
                   data-cursor="hover"
                   onClick={() => setAuthOpen(true)}
-                  className="rounded-full border border-cyan-300/40 bg-cyan-300/[0.06] px-5 py-2 text-sm text-cyan-300 hover:bg-cyan-300/15 hover:border-cyan-300/60 transition-all shadow-[0_0_20px_rgba(34,211,238,0.1)] hover:shadow-[0_0_25px_rgba(34,211,238,0.2)]"
+                  className="hidden md:block rounded-full border border-cyan-300/40 bg-cyan-300/[0.06] px-5 py-2 text-sm text-cyan-300 hover:bg-cyan-300/15 hover:border-cyan-300/60 transition-all shadow-[0_0_20px_rgba(34,211,238,0.1)] hover:shadow-[0_0_25px_rgba(34,211,238,0.2)]"
                 >
                   Accedi
                 </button>
-              )}
-            </div>
+                {/* Mobile: compact profile icon */}
+                <button
+                  type="button"
+                  data-cursor="hover"
+                  onClick={() => setAuthOpen(true)}
+                  aria-label="Accedi"
+                  className="md:hidden flex items-center justify-center size-10 rounded-full border border-white/15 bg-black/40 text-white/70 hover:text-white hover:border-cyan-300/60 transition-all"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                </button>
+              </>
+            )}
 
             {/* Settings (inline, not fixed) */}
             <SettingsPanel inline />
-
-            {/* Hamburger (mobile) */}
-            <button
-              type="button"
-              data-cursor="hover"
-              onClick={() => setMobileOpen((o) => !o)}
-              aria-label="Menu"
-              className="md:hidden flex flex-col gap-1.5 items-center justify-center size-10 rounded-full border border-white/15 bg-black/40"
-            >
-              <motion.span
-                animate={mobileOpen ? { rotate: 45, y: 5 } : { rotate: 0, y: 0 }}
-                className="block w-5 h-px bg-white/80 origin-center"
-              />
-              <motion.span
-                animate={mobileOpen ? { opacity: 0 } : { opacity: 1 }}
-                className="block w-5 h-px bg-white/80"
-              />
-              <motion.span
-                animate={mobileOpen ? { rotate: -45, y: -5 } : { rotate: 0, y: 0 }}
-                className="block w-5 h-px bg-white/80 origin-center"
-              />
-            </button>
           </div>
         </div>
       </nav>
@@ -171,13 +199,9 @@ export function Navbar() {
         {mobileOpen && (
           <MobileMenu
             items={NAV_ITEMS}
-            user={user}
             onNavigate={scrollTo}
-            onAuth={() => {
-              setMobileOpen(false);
-              setAuthOpen(true);
-            }}
             onClose={() => setMobileOpen(false)}
+            triggerRef={hamburgerRef}
           />
         )}
       </AnimatePresence>

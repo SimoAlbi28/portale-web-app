@@ -7,11 +7,12 @@ type Props = {
   active: AppCategory | "all";
   onChange: (id: AppCategory | "all") => void;
   counts: Record<AppCategory | "all", number>;
+  children?: React.ReactNode;
 };
 
-export function CategoryFilter({ active, onChange, counts }: Props) {
+export function CategoryFilter({ active, onChange, counts, children }: Props) {
   return (
-    <div className="flex flex-wrap gap-2 md:gap-3">
+    <div className="flex flex-wrap justify-center gap-2 md:gap-3">
       {categories.map((c) => {
         const isActive = active === c.id;
         return (
@@ -47,6 +48,7 @@ export function CategoryFilter({ active, onChange, counts }: Props) {
           </button>
         );
       })}
+      {children}
     </div>
   );
 }
