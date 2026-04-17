@@ -3,17 +3,20 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import type { AppMeta } from "@/lib/apps";
+import { apps, type AppMeta } from "@/lib/apps";
+import { SectionSeparator } from "@/components/ui/SectionSeparator";
 
 type Props = { app: AppMeta };
 
 export function AppDetail({ app }: Props) {
   return (
-    <article className="relative mx-auto w-full max-w-5xl px-6 md:px-10 pt-24 md:pt-32 pb-16">
+    <article className="relative mx-auto w-full max-w-5xl px-6 md:px-10 pt-24 md:pt-32 pb-28 md:pb-16">
+      {/* Desktop back link (top-left) */}
       <motion.div
         initial={{ opacity: 0, x: -16 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.4 }}
+        className="hidden md:block"
       >
         <Link
           href="/"
@@ -39,27 +42,84 @@ export function AppDetail({ app }: Props) {
         </Link>
       </motion.div>
 
+      {/* Mobile back link (fixed bottom) */}
+      <div className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-40">
+        <Link
+          href="/"
+          data-cursor="hover"
+          className="group inline-flex items-center gap-2 rounded-full border border-cyan-300/50 bg-[#07021c]/95 backdrop-blur-xl px-5 py-3 text-sm font-medium text-white shadow-[0_8px_30px_rgba(0,0,0,0.6),0_0_24px_rgba(34,211,238,0.3)] hover:border-cyan-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.6),0_0_32px_rgba(34,211,238,0.5)] transition-all"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <path
+              d="M19 12H5m5-5-5 5 5 5"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          Torna al portale
+        </Link>
+      </div>
+
       <motion.header
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.1 }}
         className="mt-8 flex flex-col items-center text-center gap-6"
       >
-        <div
-          className={`shrink-0 rounded-3xl p-4 ring-1 ring-white/10 w-fit ${
-            app.iconNeedsLightBg ? "bg-white" : "bg-white/5"
-          }`}
-          style={{ boxShadow: `0 0 40px ${app.accentColor}40` }}
-        >
-          <Image
-            src={app.icon}
-            alt={`Logo ${app.name}`}
-            width={112}
-            height={112}
-            className="size-20 md:size-28 object-contain"
-            priority
-          />
-        </div>
+        <span className="text-xs uppercase tracking-[0.4em] font-mono text-cyan-300">
+          // App Details
+        </span>
+        {(() => {
+          const idx = apps.findIndex((a) => a.slug === app.slug);
+          const prev = apps[(idx - 1 + apps.length) % apps.length];
+          const next = apps[(idx + 1) % apps.length];
+          return (
+            <div className="flex items-center justify-center gap-4 md:gap-8">
+              <Link
+                href={`/apps/${prev.slug}`}
+                data-cursor="hover"
+                aria-label={`App precedente: ${prev.name}`}
+                className="group flex items-center justify-center size-11 md:size-12 rounded-full border border-white/15 bg-[#0a0420]/85 backdrop-blur-md text-white/70 hover:text-white hover:border-cyan-300/60 hover:shadow-[0_0_20px_rgba(34,211,238,0.3)] transition-all"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover:-translate-x-0.5">
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+              </Link>
+              <div
+                className={`shrink-0 rounded-3xl p-4 ring-1 ring-white/10 w-fit ${
+                  app.iconNeedsLightBg ? "bg-white" : "bg-white/5"
+                }`}
+                style={{ boxShadow: `0 0 40px ${app.accentColor}40` }}
+              >
+                <Image
+                  src={app.icon}
+                  alt={`Logo ${app.name}`}
+                  width={112}
+                  height={112}
+                  className="size-20 md:size-28 object-contain"
+                  priority
+                />
+              </div>
+              <Link
+                href={`/apps/${next.slug}`}
+                data-cursor="hover"
+                aria-label={`App successiva: ${next.name}`}
+                className="group flex items-center justify-center size-11 md:size-12 rounded-full border border-white/15 bg-[#0a0420]/85 backdrop-blur-md text-white/70 hover:text-white hover:border-cyan-300/60 hover:shadow-[0_0_20px_rgba(34,211,238,0.3)] transition-all"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover:translate-x-0.5">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </Link>
+            </div>
+          );
+        })()}
         <div className="flex flex-col items-center gap-3 max-w-3xl">
           <span
             className="inline-block text-xs uppercase tracking-[0.3em] font-mono"
@@ -89,8 +149,8 @@ export function AppDetail({ app }: Props) {
               data-cursor="hover"
               className="rounded-full px-6 py-3 text-sm md:text-base font-semibold text-black transition-shadow inline-flex items-center gap-2"
               style={{
-                background: `linear-gradient(90deg, ${app.accentColor}, #ffffff)`,
-                boxShadow: `0 0 24px ${app.accentColor}80`,
+                background: "linear-gradient(90deg, #ec4899, #ffffff)",
+                boxShadow: "0 0 24px rgba(236,72,153,0.6)",
               }}
             >
               Richiedi demo
@@ -108,17 +168,19 @@ export function AppDetail({ app }: Props) {
             <Link
               href={`/?contact=preventivo&app=${app.slug}#contatti`}
               data-cursor="hover"
-              className="rounded-full px-6 py-3 text-sm md:text-base font-semibold text-white/90 border border-white/25 hover:border-white/50 hover:bg-white/5 transition-colors inline-flex items-center gap-2"
+              className="rounded-full px-6 py-3 text-sm md:text-base font-semibold text-black transition-shadow inline-flex items-center gap-2"
+              style={{
+                background: "linear-gradient(90deg, #10b981, #ffffff)",
+                boxShadow: "0 0 24px rgba(16,185,129,0.6)",
+              }}
             >
               Richiedi preventivo
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M5 12h14m-5-5 5 5-5 5"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <path d="M14 2v6h6" />
+                <path d="M16 13H8" />
+                <path d="M16 17H8" />
+                <path d="M10 9H8" />
               </svg>
             </Link>
           </div>
@@ -128,12 +190,14 @@ export function AppDetail({ app }: Props) {
         </div>
       </motion.header>
 
+      <SectionSeparator />
+
       <motion.section
         initial={{ opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-80px" }}
         transition={{ duration: 0.6 }}
-        className="mt-16 md:mt-24 flex flex-col items-center gap-6 md:gap-8 text-center"
+        className="flex flex-col items-center gap-6 md:gap-8 text-center"
       >
         <div className="flex flex-col items-center gap-3">
           <span className="text-xs uppercase tracking-[0.3em] font-mono text-cyan-300">
@@ -261,13 +325,15 @@ export function AppDetail({ app }: Props) {
         )}
       </motion.section>
 
+      <SectionSeparator />
+
       {/* Pacchetto & Servizi */}
       <motion.section
         initial={{ opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-80px" }}
         transition={{ duration: 0.6 }}
-        className="mt-16 md:mt-24 flex flex-col items-center gap-6 md:gap-8 text-center"
+        className="flex flex-col items-center gap-6 md:gap-8 text-center"
       >
         <div className="flex flex-col items-center gap-3">
           <span className="text-xs uppercase tracking-[0.3em] font-mono text-fuchsia-300">
@@ -325,13 +391,15 @@ export function AppDetail({ app }: Props) {
         </div>
       </motion.section>
 
+      <SectionSeparator />
+
       {/* Personalizzazioni disponibili */}
       <motion.section
         initial={{ opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-80px" }}
         transition={{ duration: 0.6 }}
-        className="mt-16 md:mt-24 flex flex-col items-center gap-6 md:gap-8 text-center"
+        className="flex flex-col items-center gap-6 md:gap-8 text-center"
       >
         <div className="flex flex-col items-center gap-3">
           <span className="text-xs uppercase tracking-[0.3em] font-mono text-violet-300">
@@ -371,7 +439,7 @@ export function AppDetail({ app }: Props) {
           ].map((c) => (
             <div
               key={c.title}
-              className="rounded-xl border border-white/10 bg-white/[0.03] p-4 hover:border-white/25 transition-colors"
+              className="rounded-xl border border-white/15 bg-[#0a0420]/90 backdrop-blur-xl p-4 shadow-[0_6px_20px_rgba(0,0,0,0.45)] hover:border-white/35 hover:bg-[#0a0420]/95 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1.5">
                 <span
@@ -390,13 +458,14 @@ export function AppDetail({ app }: Props) {
       </motion.section>
 
       {app.screenshots && app.screenshots.length > 0 && (
-        <motion.section
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.6 }}
-          className="mt-16 md:mt-24"
-        >
+        <>
+          <SectionSeparator />
+          <motion.section
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.6 }}
+          >
           <span className="text-xs uppercase tracking-[0.3em] font-mono text-fuchsia-300">
             // Screenshots
           </span>
@@ -416,17 +485,19 @@ export function AppDetail({ app }: Props) {
               </div>
             ))}
           </div>
-        </motion.section>
+          </motion.section>
+        </>
       )}
 
       {app.changelog && app.changelog.length > 0 && (
-        <motion.section
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.6 }}
-          className="mt-16 md:mt-24"
-        >
+        <>
+          <SectionSeparator />
+          <motion.section
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.6 }}
+          >
           <span className="text-xs uppercase tracking-[0.3em] font-mono text-violet-300">
             // Changelog
           </span>
@@ -448,14 +519,33 @@ export function AppDetail({ app }: Props) {
               </li>
             ))}
           </ul>
-        </motion.section>
+          </motion.section>
+        </>
       )}
 
       {(!app.screenshots || app.screenshots.length === 0) && (
-        <div className="mt-16 rounded-2xl border border-dashed border-white/10 p-8 text-center text-white/40 text-sm">
+        <div className="mt-16 rounded-2xl border border-dashed border-white/30 bg-[#0a0420]/95 backdrop-blur-xl px-6 py-8 text-center text-white/70 text-sm shadow-[0_8px_30px_rgba(0,0,0,0.6)] flex items-center justify-center gap-3">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="shrink-0 text-cyan-300"
+            aria-hidden
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <circle cx="9" cy="9" r="2" />
+            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+          </svg>
           Screenshot in arrivo — la galleria sarà disponibile a breve.
         </div>
       )}
+
+      <SectionSeparator />
 
       {/* Final CTA */}
       <motion.section
@@ -463,7 +553,6 @@ export function AppDetail({ app }: Props) {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-80px" }}
         transition={{ duration: 0.6 }}
-        className="mt-16 md:mt-24"
       >
         <div
           className="rounded-3xl border bg-[#0a0420]/90 backdrop-blur-xl p-8 md:p-10 text-center"
@@ -484,8 +573,8 @@ export function AppDetail({ app }: Props) {
               data-cursor="hover"
               className="rounded-full px-6 py-3 text-sm font-semibold text-black inline-flex items-center gap-2"
               style={{
-                background: `linear-gradient(90deg, ${app.accentColor}, #ffffff)`,
-                boxShadow: `0 0 24px ${app.accentColor}80`,
+                background: "linear-gradient(90deg, #ec4899, #ffffff)",
+                boxShadow: "0 0 24px rgba(236,72,153,0.6)",
               }}
             >
               Richiedi demo
@@ -493,7 +582,11 @@ export function AppDetail({ app }: Props) {
             <Link
               href={`/?contact=preventivo&app=${app.slug}#contatti`}
               data-cursor="hover"
-              className="rounded-full px-6 py-3 text-sm font-semibold text-white/90 border border-white/25 hover:border-white/50 hover:bg-white/5 transition-colors inline-flex items-center gap-2"
+              className="rounded-full px-6 py-3 text-sm font-semibold text-black transition-shadow inline-flex items-center gap-2"
+              style={{
+                background: "linear-gradient(90deg, #10b981, #ffffff)",
+                boxShadow: "0 0 24px rgba(16,185,129,0.6)",
+              }}
             >
               Richiedi preventivo
             </Link>

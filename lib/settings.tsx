@@ -9,7 +9,15 @@ import {
   useState,
 } from "react";
 
-export type Theme = "cyberpunk" | "synthwave" | "matrix" | "minimal";
+export type Theme =
+  | "cyberpunk"
+  | "synthwave"
+  | "matrix"
+  | "minimal"
+  | "rosaViola"
+  | "rossoArancio"
+  | "arcobaleno"
+  | "verdeGiallo";
 export type Intensity = "full" | "light" | "off";
 export type View = "grid" | "list";
 export type Sort = "category" | "alpha" | "random";
@@ -109,6 +117,42 @@ export const THEMES: Record<
     accentB: "#1e40af",
     accentC: "#22d3ee",
     webgl: { a: "#0a1f4d", b: "#1e40af", c: "#22d3ee" },
+  },
+  rosaViola: {
+    label: "Nebula",
+    bg: "#180326",
+    fg: "#ffe6f6",
+    accentA: "#ec4899",
+    accentB: "#c026d3",
+    accentC: "#a855f7",
+    webgl: { a: "#ec4899", b: "#c026d3", c: "#a855f7" },
+  },
+  rossoArancio: {
+    label: "Sunset",
+    bg: "#1a0a00",
+    fg: "#ffe8d5",
+    accentA: "#ef4444",
+    accentB: "#f97316",
+    accentC: "#fb923c",
+    webgl: { a: "#ef4444", b: "#f97316", c: "#fb923c" },
+  },
+  arcobaleno: {
+    label: "Prism",
+    bg: "#030014",
+    fg: "#ffffff",
+    accentA: "#ec4899",
+    accentB: "#22d3ee",
+    accentC: "#22c55e",
+    webgl: { a: "#ec4899", b: "#22d3ee", c: "#facc15" },
+  },
+  verdeGiallo: {
+    label: "Toxic",
+    bg: "#0a1400",
+    fg: "#e8ffd5",
+    accentA: "#22c55e",
+    accentB: "#84cc16",
+    accentC: "#facc15",
+    webgl: { a: "#22c55e", b: "#84cc16", c: "#facc15" },
   },
 };
 

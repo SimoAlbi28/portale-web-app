@@ -2,9 +2,24 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { X, RotateCcw } from "lucide-react";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { apps } from "@/lib/apps";
 import type { User } from "@supabase/supabase-js";
+
+function ClearButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-label="Svuota campo"
+      data-cursor="hover"
+      onClick={onClick}
+      className="absolute top-1/2 right-2 -translate-y-1/2 flex items-center justify-center size-6 rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+    >
+      <X size={14} />
+    </button>
+  );
+}
 
 export function ContactSection() {
   const [user, setUser] = useState<User | null>(null);
@@ -134,27 +149,33 @@ export function ContactSection() {
                 <label className="block text-[11px] uppercase tracking-widest text-white/60 mb-1.5 ml-1">
                   Nome
                 </label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  placeholder="Il tuo nome"
-                  className="w-full rounded-xl border border-white/20 bg-white/[0.06] px-4 py-3 text-sm text-white placeholder:text-white/25 outline-none focus:border-cyan-300/50 transition-colors"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    placeholder="Il tuo nome"
+                    className="w-full rounded-xl border border-white/20 bg-white/[0.06] pl-4 pr-10 py-3 text-sm text-white placeholder:text-white/25 outline-none focus:border-cyan-300/50 transition-colors"
+                  />
+                  {name && <ClearButton onClick={() => setName("")} />}
+                </div>
               </div>
               <div>
                 <label className="block text-[11px] uppercase tracking-widest text-white/60 mb-1.5 ml-1">
                   Email
                 </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  placeholder="la@tua.email"
-                  className="w-full rounded-xl border border-white/20 bg-white/[0.06] px-4 py-3 text-sm text-white placeholder:text-white/25 outline-none focus:border-cyan-300/50 transition-colors"
-                />
+                <div className="relative">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    placeholder="la@tua.email"
+                    className="w-full rounded-xl border border-white/20 bg-white/[0.06] pl-4 pr-10 py-3 text-sm text-white placeholder:text-white/25 outline-none focus:border-cyan-300/50 transition-colors"
+                  />
+                  {email && <ClearButton onClick={() => setEmail("")} />}
+                </div>
               </div>
             </div>
 
@@ -162,28 +183,44 @@ export function ContactSection() {
               <label className="block text-[11px] uppercase tracking-widest text-white/60 mb-1.5 ml-1">
                 Oggetto
               </label>
-              <input
-                type="text"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                required
-                placeholder="Di cosa si tratta?"
-                className="w-full rounded-xl border border-white/20 bg-white/[0.06] px-4 py-3 text-sm text-white placeholder:text-white/25 outline-none focus:border-cyan-300/50 transition-colors"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  required
+                  placeholder="Di cosa si tratta?"
+                  className="w-full rounded-xl border border-white/20 bg-white/[0.06] pl-4 pr-10 py-3 text-sm text-white placeholder:text-white/25 outline-none focus:border-cyan-300/50 transition-colors"
+                />
+                {subject && <ClearButton onClick={() => setSubject("")} />}
+              </div>
             </div>
 
             <div>
               <label className="block text-[11px] uppercase tracking-widest text-white/60 mb-1.5 ml-1">
                 Messaggio
               </label>
-              <textarea
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                required
-                rows={5}
-                placeholder="Scrivi il tuo messaggio..."
-                className="w-full rounded-xl border border-white/20 bg-white/[0.06] px-4 py-3 text-sm text-white placeholder:text-white/25 outline-none focus:border-cyan-300/50 transition-colors resize-none"
-              />
+              <div className="relative">
+                <textarea
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                  required
+                  rows={5}
+                  placeholder="Scrivi il tuo messaggio..."
+                  className="w-full rounded-xl border border-white/20 bg-white/[0.06] pl-4 pr-10 py-3 text-sm text-white placeholder:text-white/25 outline-none focus:border-cyan-300/50 transition-colors resize-none"
+                />
+                {body && (
+                  <button
+                    type="button"
+                    aria-label="Svuota messaggio"
+                    data-cursor="hover"
+                    onClick={() => setBody("")}
+                    className="absolute top-2.5 right-2 flex items-center justify-center size-6 rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
             </div>
 
             {error && <p className="text-xs text-red-400 px-1">{error}</p>}
@@ -194,14 +231,32 @@ export function ContactSection() {
               </p>
             )}
 
-            <button
-              type="submit"
-              disabled={sending || !user}
-              data-cursor="hover"
-              className="w-full rounded-xl bg-gradient-to-r from-cyan-400 to-violet-400 py-3 text-sm font-semibold text-black transition-opacity disabled:opacity-40 hover:opacity-90"
-            >
-              {sending ? "Invio..." : "Invia messaggio"}
-            </button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                type="submit"
+                disabled={sending || !user}
+                data-cursor="hover"
+                className="flex-1 rounded-xl bg-gradient-to-r from-cyan-400 to-violet-400 py-3 text-sm font-semibold text-black transition-opacity disabled:opacity-40 hover:opacity-90"
+              >
+                {sending ? "Invio..." : "Invia messaggio"}
+              </button>
+              <button
+                type="button"
+                data-cursor="hover"
+                onClick={() => {
+                  setName(user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "");
+                  setEmail(user?.email ?? "");
+                  setSubject("");
+                  setBody("");
+                  setError("");
+                }}
+                disabled={!name && !email && !subject && !body}
+                className="sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-red-400/40 bg-red-500/10 px-4 py-3 text-sm text-red-300 hover:text-red-200 hover:border-red-400/70 hover:bg-red-500/20 hover:shadow-[0_0_20px_rgba(239,68,68,0.3)] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <RotateCcw size={14} />
+                Reset all
+              </button>
+            </div>
           </form>
         )}
       </div>
